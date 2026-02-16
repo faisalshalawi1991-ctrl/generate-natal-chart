@@ -8,10 +8,11 @@ arguments and generates an astrological birth chart using Kerykeion in offline m
 
 import argparse
 import sys
+import os
 from pathlib import Path
 from datetime import datetime
 
-from kerykeion import AstrologicalSubjectFactory
+from kerykeion import AstrologicalSubjectFactory, NatalAspects, KerykeionException
 
 
 def valid_date(s):
@@ -28,7 +29,12 @@ def valid_date(s):
         argparse.ArgumentTypeError: If date format is invalid
     """
     try:
-        return datetime.strptime(s, "%Y-%m-%d")
+        dt = datetime.strptime(s, "%Y-%m-%d")
+        # Validate year range: 1800 to current year (Swiss Ephemeris supports historical dates)
+        current_year = datetime.now().year
+        if dt.year < 1800 or dt.year > current_year:
+            raise argparse.ArgumentTypeError(f"Year must be between 1800 and {current_year}")
+        return dt
     except ValueError as e:
         raise argparse.ArgumentTypeError(f"Invalid date format '{s}'. Use YYYY-MM-DD. Error: {e}")
 
@@ -107,7 +113,11 @@ def main():
         description="Generate astrological birth chart data",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Example:
+Examples:
+  # Online mode (GeoNames lookup):
+  %(prog)s "Test Person" --date 1990-06-15 --time 14:30 --city "London" --nation "GB"
+
+  # Offline mode (exact coordinates):
   %(prog)s "Albert Einstein" --date 1879-03-14 --time 11:30 --lat 48.4011 --lng 9.9876 --tz "Europe/Berlin"
         """
     )
@@ -133,46 +143,103 @@ Example:
         help="Birth time in HH:MM format (24-hour)"
     )
 
+    # Location arguments - two modes: GeoNames online OR offline coordinates
+    parser.add_argument(
+        "--city",
+        type=str,
+        help="City name for GeoNames online lookup (use with --nation)"
+    )
+
+    parser.add_argument(
+        "--nation",
+        type=str,
+        help="Nation code for GeoNames online lookup (e.g., 'US', 'GB', 'FR')"
+    )
+
     parser.add_argument(
         "--lat",
         type=valid_latitude,
-        required=True,
-        help="Birth location latitude (-90 to 90)"
+        help="Birth location latitude (-90 to 90) for offline mode"
     )
 
     parser.add_argument(
         "--lng",
         type=valid_longitude,
-        required=True,
-        help="Birth location longitude (-180 to 180)"
+        help="Birth location longitude (-180 to 180) for offline mode"
     )
 
     parser.add_argument(
         "--tz",
         type=str,
-        required=True,
-        help="IANA timezone string (e.g., 'America/New_York', 'Europe/Berlin')"
+        help="IANA timezone string for offline mode (e.g., 'America/New_York', 'Europe/Berlin')"
     )
 
     try:
         args = parser.parse_args()
 
-        # Create AstrologicalSubject using Kerykeion in offline mode
-        subject = AstrologicalSubjectFactory.from_birth_data(
-            name=args.name,
-            year=args.date.year,
-            month=args.date.month,
-            day=args.date.day,
-            hour=args.time.hour,
-            minute=args.time.minute,
-            lng=args.lng,
-            lat=args.lat,
-            tz_str=args.tz,
-            online=False
-        )
+        # Validate location mode: must provide either GeoNames or coordinates (not both, not neither)
+        has_geonames = args.city and args.nation
+        has_coords = args.lat is not None and args.lng is not None and args.tz
 
-        # Print confirmation with sun sign and position
-        print(f"Chart created for {args.name} -- Sun in {subject.sun.sign} at {subject.sun.abs_pos:.2f} degrees")
+        if not has_geonames and not has_coords:
+            parser.error("Must provide either (--city and --nation) or (--lat, --lng, --tz)")
+        if has_geonames and has_coords:
+            parser.error("Cannot mix location modes: use either (--city/--nation) or (--lat/--lng/--tz)")
+
+        # Create AstrologicalSubject based on location mode
+        if has_geonames:
+            # GeoNames online mode
+            try:
+                geonames_username = os.getenv('KERYKEION_GEONAMES_USERNAME')
+                kwargs = {
+                    'name': args.name,
+                    'year': args.date.year,
+                    'month': args.date.month,
+                    'day': args.date.day,
+                    'hour': args.time.hour,
+                    'minute': args.time.minute,
+                    'city': args.city,
+                    'nation': args.nation,
+                    'online': True,
+                    'houses_system_identifier': 'P'
+                }
+                if geonames_username:
+                    kwargs['geonames_username'] = geonames_username
+
+                subject = AstrologicalSubjectFactory.from_birth_data(**kwargs)
+
+                # Display resolved location for user verification
+                print(f"Location resolved: {subject.city}, {subject.nation}")
+                print(f"Coordinates: {subject.lat:.4f}, {subject.lng:.4f}")
+                print(f"Timezone: {subject.tz_str}")
+
+            except KerykeionException as e:
+                print(f"Error: Unable to resolve location '{args.city}, {args.nation}'", file=sys.stderr)
+                print(f"Details: {e}", file=sys.stderr)
+                print("Tip: Check city spelling and nation code (e.g., 'US', 'GB', 'FR')", file=sys.stderr)
+                return 1
+        else:
+            # Offline coordinate mode
+            subject = AstrologicalSubjectFactory.from_birth_data(
+                name=args.name,
+                year=args.date.year,
+                month=args.date.month,
+                day=args.date.day,
+                hour=args.time.hour,
+                minute=args.time.minute,
+                lng=args.lng,
+                lat=args.lat,
+                tz_str=args.tz,
+                online=False,
+                houses_system_identifier='P'
+            )
+
+        # Verify Placidus house system
+        if subject.houses_system_identifier != "P":
+            print(f"Warning: Expected Placidus (P), got {subject.houses_system_identifier}", file=sys.stderr)
+
+        # Temporary confirmation message
+        print(f"Chart calculated successfully for {args.name}")
 
         return 0
 
