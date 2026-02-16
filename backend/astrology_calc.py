@@ -14,6 +14,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 from kerykeion import AstrologicalSubjectFactory, NatalAspects, KerykeionException
+from kerykeion.charts.chart_drawer import ChartDrawer
 import swisseph as swe
 import kerykeion
 
@@ -566,6 +567,12 @@ Examples:
         help="IANA timezone string for offline mode (e.g., 'America/New_York', 'Europe/Berlin')"
     )
 
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        help="Directory to save chart.json and chart.svg files (optional)"
+    )
+
     try:
         args = parser.parse_args()
 
@@ -878,8 +885,53 @@ Examples:
             planets_str = ', '.join(modality_planets[modality]) if modality_planets[modality] else 'None'
             print(f"{modality:8} ({count}): {percentage:5.1f}% - {planets_str}")
 
-        # Build comprehensive JSON structure (for file output in Plan 02)
+        # Build comprehensive JSON structure
         chart_dict = build_chart_json(subject, args)
+
+        # Write output files if --output-dir is provided
+        if args.output_dir:
+            output_path = Path(args.output_dir)
+            output_path.mkdir(parents=True, exist_ok=True)
+
+            # Write chart.json
+            json_file = output_path / "chart.json"
+            with open(json_file, 'w', encoding='utf-8') as f:
+                json.dump(chart_dict, f, indent=2, ensure_ascii=False)
+
+            # Generate SVG using ChartDrawer
+            try:
+                # Try ChartDataFactory approach first (5.7.2 API)
+                try:
+                    from kerykeion.chart_data_factory import ChartDataFactory
+                    chart_data = ChartDataFactory.create_natal_chart_data(subject)
+                    drawer = ChartDrawer(chart_data=chart_data)
+                    drawer.save_svg(output_path=str(output_path), filename="chart", remove_css_variables=True)
+                except (ImportError, AttributeError):
+                    # Fall back to direct subject approach
+                    drawer = ChartDrawer(subject)
+                    drawer.save_svg(output_path=str(output_path), filename="chart")
+
+                # Kerykeion may create files with different names - find and rename if needed
+                svg_files = list(output_path.glob("chart*.svg"))
+                if svg_files:
+                    # If the file isn't exactly "chart.svg", rename it
+                    if svg_files[0].name != "chart.svg":
+                        svg_files[0].rename(output_path / "chart.svg")
+
+                svg_file = output_path / "chart.svg"
+                if not svg_file.exists():
+                    print(f"Warning: SVG generation may have failed - chart.svg not found", file=sys.stderr)
+
+            except Exception as e:
+                print(f"Warning: SVG generation failed: {e}", file=sys.stderr)
+
+            # Print confirmation
+            print(f"\n=== CHART FILES SAVED ===")
+            print(f"Output directory: {output_path.absolute()}")
+            if json_file.exists():
+                print(f"  - chart.json ({json_file.stat().st_size} bytes)")
+            if (output_path / "chart.svg").exists():
+                print(f"  - chart.svg ({(output_path / 'chart.svg').stat().st_size} bytes)")
 
         return 0
 
