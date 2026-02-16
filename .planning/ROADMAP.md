@@ -66,10 +66,11 @@ Plans:
   4. Script determines essential dignities for each planet (domicile, exaltation, detriment, fall)
   5. Script calculates element distribution (fire, earth, air, water) across all placements
   6. Script calculates modality distribution (cardinal, fixed, mutable) across all placements
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD
+- [ ] 03-01-PLAN.md — Asteroids, Arabic parts, and essential dignities
+- [ ] 03-02-PLAN.md — Fixed star conjunctions and element/modality distributions
 
 ### Phase 4: Data Output & Storage
 **Goal**: Chart data is structured in comprehensive JSON format, visualized as SVG, and stored in organized profile system
@@ -131,7 +132,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Foundation & Setup | 0/1 | Planning complete | - |
 | 2. Core Calculation Engine | 0/1 | Planning complete | - |
-| 3. Extended Calculations | 0/? | Not started | - |
+| 3. Extended Calculations | 0/2 | Planning complete | - |
 | 4. Data Output & Storage | 0/? | Not started | - |
 | 5. Claude Code Skill Layer | 0/? | Not started | - |
 | 6. Context Loading & Interpretation | 0/? | Not started | - |
