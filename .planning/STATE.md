@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-16)
 
 **Core value:** Load a person's complete natal chart data into Claude's context so it can answer deeply specific questions about life path, psychology, and astrological patterns based on real calculated positions — not generic horoscopes.
-**Current focus:** Phase 4: Data Output & Storage
+**Current focus:** Phase 5: Claude Code Skill Layer
 
 ## Current Position
 
-Phase: 4 of 6 (Data Output & Storage)
-Plan: 2 of 2 in current phase (04-02 complete)
-Status: Phase 04 complete
-Last activity: 2026-02-16 — Completed 04-02-PLAN.md (Profile Management System)
+Phase: 5 of 6 (Claude Code Skill Layer)
+Plan: 1 of 1 in current phase (05-01 complete)
+Status: Phase 05 complete
+Last activity: 2026-02-16 — Completed 05-01-PLAN.md (Natal Chart Skill Definition)
 
-Progress: [████████░░] 80%
+Progress: [████████▓░] 85%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 4.3 minutes
-- Total execution time: 0.43 hours
+- Total plans completed: 7
+- Average duration: 4.0 minutes
+- Total execution time: 0.47 hours
 
 **By Phase:**
 
@@ -31,10 +31,11 @@ Progress: [████████░░] 80%
 | 02    | 1     | 4m    | 4m       |
 | 03    | 2     | 8m    | 4m       |
 | 04    | 2     | 8m    | 4m       |
+| 05    | 1     | 3m    | 3m       |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (2m), 03-02 (6m), 04-01 (4m), 04-02 (4m)
-- Trend: Stable velocity (averaging 4m per plan)
+- Last 5 plans: 03-02 (6m), 04-01 (4m), 04-02 (4m), 05-01 (3m)
+- Trend: Improving velocity (3m for latest plan)
 
 *Updated after each plan completion*
 
@@ -68,6 +69,8 @@ Recent decisions affecting current work:
 - **04-02:** Non-interactive overwrite protection using --force flag instead of input() for Claude Code skill compatibility
 - **04-02:** Automatic profile storage on every chart generation (removed optional --output-dir, always save to ~/.natal-charts/{slug}/)
 - **04-02:** Display existing birth data before rejecting overwrite to help users verify profile identity
+- **05-01:** Direct interpreter path (./venv/Scripts/python) in skill ensures project venv usage regardless of system Python config
+- **05-01:** SKILL-INSTALLATION.md reference document tracks skill installations outside repository
 
 ### Pending Todos
 
@@ -79,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-16T14:06:47Z
-Stopped at: Completed Phase 04 Plan 02 (Profile Management System)
-Resume file: .planning/phases/04-data-output-storage/04-02-SUMMARY.md
+Last session: 2026-02-16T14:40:44Z
+Stopped at: Completed Phase 05 Plan 01 (Natal Chart Skill Definition)
+Resume file: .planning/phases/05-claude-code-skill-layer/05-01-SUMMARY.md
