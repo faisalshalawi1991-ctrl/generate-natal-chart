@@ -88,10 +88,11 @@ Plans:
   9. Script lists all existing chart profiles with person names
   10. Script warns and displays existing birth details before overwriting profile
   11. Profile name slugification handles unicode correctly
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD
+- [ ] 04-01-PLAN.md — JSON structured data export and SVG natal wheel generation
+- [ ] 04-02-PLAN.md — Profile management system with storage, listing, and overwrite protection
 
 ### Phase 5: Claude Code Skill Layer
 **Goal**: Claude Code skill is installed and operational with smart routing between create/list/load workflows
