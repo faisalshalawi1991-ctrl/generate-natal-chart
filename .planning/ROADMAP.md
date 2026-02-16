@@ -50,10 +50,10 @@ Plans:
   8. Location resolves to coordinates via GeoNames lookup
   9. Resolved city/country displays for user verification
   10. GeoNames failures produce clear error messages
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD
+- [ ] 02-01-PLAN.md — Dual-mode location handling, enhanced input validation, and full natal chart calculation output
 
 ### Phase 3: Extended Calculations
 **Goal**: Advanced astrological data beyond core planets is calculated and available
@@ -130,7 +130,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Setup | 0/1 | Planning complete | - |
-| 2. Core Calculation Engine | 0/? | Not started | - |
+| 2. Core Calculation Engine | 0/1 | Planning complete | - |
 | 3. Extended Calculations | 0/? | Not started | - |
 | 4. Data Output & Storage | 0/? | Not started | - |
 | 5. Claude Code Skill Layer | 0/? | Not started | - |
