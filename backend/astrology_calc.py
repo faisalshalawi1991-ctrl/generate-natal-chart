@@ -13,6 +13,8 @@ from pathlib import Path
 from datetime import datetime
 
 from kerykeion import AstrologicalSubjectFactory, NatalAspects, KerykeionException
+import swisseph as swe
+import kerykeion
 
 
 # Essential dignities lookup table for traditional planets (Sun through Saturn)
@@ -26,6 +28,25 @@ DIGNITIES = {
     'Jupiter': {'domicile': ['Sag', 'Pis'], 'exaltation': ['Can'], 'detriment': ['Gem', 'Vir'], 'fall': ['Cap']},
     'Saturn': {'domicile': ['Cap', 'Aqu'], 'exaltation': ['Lib'], 'detriment': ['Can', 'Leo'], 'fall': ['Ari']},
 }
+
+# Major fixed stars for conjunction detection
+# 13 historically significant stars (magnitude 1-2, used in classical astrology)
+# Names must be lowercase for Swiss Ephemeris fixstar2_ut
+MAJOR_STARS = [
+    ('aldebaran', 'Aldebaran'),    # Eye of the Bull, ~9 Gem
+    ('rigel', 'Rigel'),            # Foot of Orion, ~16 Gem
+    ('sirius', 'Sirius'),          # Dog Star, brightest, ~14 Can
+    ('castor', 'Castor'),          # Alpha Geminorum, ~20 Can
+    ('pollux', 'Pollux'),          # Beta Geminorum, ~23 Can
+    ('regulus', 'Regulus'),        # Heart of the Lion, ~0 Vir
+    ('spica', 'Spica'),            # Wheat Ear of Virgo, ~24 Lib
+    ('arcturus', 'Arcturus'),      # Bear Watcher, ~24 Lib
+    ('antares', 'Antares'),        # Heart of Scorpion, ~9 Sag
+    ('vega', 'Vega'),              # Alpha Lyrae, ~15 Cap
+    ('altair', 'Altair'),          # Alpha Aquilae, ~1 Aqu
+    ('fomalhaut', 'Fomalhaut'),    # Royal Star, ~3 Pis
+    ('algol', 'Algol'),            # Demon Star, ~26 Tau
+]
 
 
 def valid_date(s):
@@ -452,6 +473,52 @@ Examples:
             print(f"{name:10} in {planet.sign:3}  {dignity_str}")
 
         print("\nNote: Traditional planets only (Sun-Saturn). Modern planet dignities (Uranus, Neptune, Pluto) are disputed and excluded.")
+
+        # Calculate and display fixed star conjunctions
+        print("\n=== FIXED STAR CONJUNCTIONS (orb <= 1.0 deg) ===")
+
+        # Set Swiss Ephemeris path to Kerykeion's sweph directory (contains sefstars.txt)
+        kerykeion_path = Path(kerykeion.__file__).parent
+        sweph_path = kerykeion_path / 'sweph'
+        swe.set_ephe_path(str(sweph_path))
+
+        # Calculate Julian day for the birth data
+        jd = swe.julday(args.date.year, args.date.month, args.date.day,
+                        args.time.hour + args.time.minute / 60.0)
+
+        # Build points to check: all 10 planets + 4 angles (use abs_pos for absolute longitude)
+        points_to_check = [(name, p.abs_pos) for name, p in planets] + \
+                          [(name, a.abs_pos) for name, a in angles]
+
+        conjunctions = []
+        for star_lookup, star_display in MAJOR_STARS:
+            try:
+                # Get star position using fixstar2_ut (needs lowercase name)
+                # Returns: (tuple_of_6_floats, star_name, retflags)
+                star_data, returned_name, ret_flag = swe.fixstar2_ut(star_lookup, jd, 0)
+                star_long = star_data[0]  # First element is longitude
+
+                # Check conjunction to each planet and angle
+                for point_name, point_long in points_to_check:
+                    # Calculate absolute difference with zodiac wrap-around handling
+                    diff = abs(point_long - star_long)
+                    if diff > 180:
+                        diff = 360 - diff
+
+                    # Conjunction if within 1 degree orb
+                    if diff <= 1.0:
+                        conjunctions.append((star_display, point_name, diff))
+
+            except Exception as e:
+                # Handle missing stars gracefully (print warning, continue)
+                print(f"Warning: Could not calculate {star_display}: {e}", file=sys.stderr)
+
+        # Display results
+        if conjunctions:
+            for star_name, point_name, orb in conjunctions:
+                print(f"{star_name} conjunct {point_name} (orb: {orb:.2f} deg)")
+        else:
+            print("No major fixed star conjunctions detected")
 
         return 0
 
