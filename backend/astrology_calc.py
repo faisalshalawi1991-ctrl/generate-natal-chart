@@ -9,8 +9,9 @@ arguments and generates an astrological birth chart using Kerykeion in offline m
 import argparse
 import sys
 import os
+import json
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 from kerykeion import AstrologicalSubjectFactory, NatalAspects, KerykeionException
 import swisseph as swe
@@ -202,6 +203,295 @@ def get_planet_dignities(planet_name, planet_sign):
         dignities.append('Peregrine')
 
     return dignities
+
+
+def build_chart_json(subject, args):
+    """
+    Build comprehensive JSON-serializable dictionary from AstrologicalSubject.
+
+    Extracts all astrological calculations into a structured format including:
+    meta, planets, houses, angles, aspects, asteroids, fixed_stars, arabic_parts,
+    dignities, and distributions.
+
+    Args:
+        subject: AstrologicalSubject instance with calculated chart data
+        args: Parsed command-line arguments containing birth data
+
+    Returns:
+        dict: Comprehensive chart data structure
+    """
+    # META SECTION
+    meta = {
+        "name": args.name,
+        "birth_date": args.date.strftime("%Y-%m-%d"),
+        "birth_time": args.time.strftime("%H:%M"),
+        "location": {
+            "city": getattr(subject, 'city', None),
+            "nation": getattr(subject, 'nation', None),
+            "latitude": subject.lat,
+            "longitude": subject.lng,
+            "timezone": subject.tz_str
+        },
+        "house_system": "Placidus",
+        "chart_type": None,  # Will be determined below
+        "generated_at": datetime.now(timezone.utc).isoformat()
+    }
+
+    # PLANETS SECTION - all 10 main planets
+    planets_list = [
+        ('Sun', subject.sun), ('Moon', subject.moon),
+        ('Mercury', subject.mercury), ('Venus', subject.venus),
+        ('Mars', subject.mars), ('Jupiter', subject.jupiter),
+        ('Saturn', subject.saturn), ('Uranus', subject.uranus),
+        ('Neptune', subject.neptune), ('Pluto', subject.pluto),
+    ]
+
+    planets = []
+    for name, planet in planets_list:
+        planets.append({
+            "name": name,
+            "sign": planet.sign,
+            "degree": planet.position % 30,
+            "abs_position": planet.abs_pos,
+            "house": str(planet.house),
+            "retrograde": getattr(planet, 'retrograde', False)
+        })
+
+    # HOUSES SECTION - all 12 house cusps
+    houses_list = [
+        subject.first_house, subject.second_house, subject.third_house,
+        subject.fourth_house, subject.fifth_house, subject.sixth_house,
+        subject.seventh_house, subject.eighth_house, subject.ninth_house,
+        subject.tenth_house, subject.eleventh_house, subject.twelfth_house,
+    ]
+
+    houses = []
+    for i, house in enumerate(houses_list, 1):
+        houses.append({
+            "number": i,
+            "sign": house.sign,
+            "degree": house.position % 30
+        })
+
+    # ANGLES SECTION
+    angles_list = [
+        ('ASC', subject.ascendant),
+        ('MC', subject.medium_coeli),
+        ('DSC', subject.descendant),
+        ('IC', subject.imum_coeli),
+    ]
+
+    angles = []
+    for name, angle in angles_list:
+        angles.append({
+            "name": name,
+            "sign": angle.sign,
+            "degree": angle.position % 30,
+            "abs_position": angle.abs_pos
+        })
+
+    # ASPECTS SECTION - major aspects between 10 main planets
+    natal_aspects = NatalAspects(subject)
+    major_types = ['conjunction', 'opposition', 'trine', 'square', 'sextile']
+    planet_names = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
+
+    filtered_aspects = [
+        asp for asp in natal_aspects.all_aspects
+        if asp.aspect in major_types
+        and asp.p1_name in planet_names
+        and asp.p2_name in planet_names
+    ]
+
+    aspects = []
+    for asp in filtered_aspects:
+        movement = asp.aspect_movement if hasattr(asp, 'aspect_movement') else ''
+        aspects.append({
+            "planet1": asp.p1_name,
+            "planet2": asp.p2_name,
+            "type": asp.aspect,
+            "orb": asp.orbit,
+            "movement": movement
+        })
+
+    # ASTEROIDS SECTION
+    asteroid_attrs = [
+        ('Chiron', 'chiron'),
+        ('Mean Lilith', 'mean_lilith'),
+        ('True Lilith', 'true_lilith'),
+        ('Ceres', 'ceres'),
+        ('Pallas', 'pallas'),
+        ('Juno', 'juno'),
+        ('Vesta', 'vesta'),
+    ]
+
+    asteroids = []
+    for name, attr in asteroid_attrs:
+        body = getattr(subject, attr, None)
+        if body is not None:
+            asteroids.append({
+                "name": name,
+                "sign": body.sign,
+                "degree": body.position % 30,
+                "house": str(body.house),
+                "retrograde": getattr(body, 'retrograde', False)
+            })
+
+    # ARABIC PARTS SECTION - Determine day/night chart and calculate parts
+    sun_house_str = str(subject.sun.house)
+    house_names = {
+        'First_House': 1, 'Second_House': 2, 'Third_House': 3, 'Fourth_House': 4,
+        'Fifth_House': 5, 'Sixth_House': 6, 'Seventh_House': 7, 'Eighth_House': 8,
+        'Ninth_House': 9, 'Tenth_House': 10, 'Eleventh_House': 11, 'Twelfth_House': 12
+    }
+    sun_house = house_names.get(sun_house_str, int(sun_house_str) if sun_house_str.isdigit() else 1)
+    is_day_chart = 7 <= sun_house <= 12
+
+    # Update meta with chart type
+    meta["chart_type"] = "Day" if is_day_chart else "Night"
+
+    asc_pos = subject.ascendant.position
+    sun_pos = subject.sun.position
+    moon_pos = subject.moon.position
+
+    # Calculate Part of Fortune
+    if is_day_chart:
+        fortune_pos = (asc_pos + moon_pos - sun_pos) % 360
+    else:
+        fortune_pos = (asc_pos + sun_pos - moon_pos) % 360
+
+    # Calculate Part of Spirit
+    if is_day_chart:
+        spirit_pos = (asc_pos + sun_pos - moon_pos) % 360
+    else:
+        spirit_pos = (asc_pos + moon_pos - sun_pos) % 360
+
+    fortune_sign, fortune_degree = position_to_sign_degree(fortune_pos)
+    spirit_sign, spirit_degree = position_to_sign_degree(spirit_pos)
+
+    arabic_parts = {
+        "part_of_fortune": {"sign": fortune_sign, "degree": fortune_degree},
+        "part_of_spirit": {"sign": spirit_sign, "degree": spirit_degree}
+    }
+
+    # DIGNITIES SECTION - traditional planets only
+    traditional_planets = [
+        ('Sun', subject.sun),
+        ('Moon', subject.moon),
+        ('Mercury', subject.mercury),
+        ('Venus', subject.venus),
+        ('Mars', subject.mars),
+        ('Jupiter', subject.jupiter),
+        ('Saturn', subject.saturn),
+    ]
+
+    dignities = []
+    for name, planet in traditional_planets:
+        dignity_status = get_planet_dignities(name, planet.sign)
+        dignities.append({
+            "planet": name,
+            "sign": planet.sign,
+            "status": dignity_status
+        })
+
+    # FIXED STARS SECTION
+    # Set Swiss Ephemeris path
+    kerykeion_path = Path(kerykeion.__file__).parent
+    sweph_path = kerykeion_path / 'sweph'
+    swe.set_ephe_path(str(sweph_path))
+
+    # Calculate Julian day
+    jd = swe.julday(args.date.year, args.date.month, args.date.day,
+                    args.time.hour + args.time.minute / 60.0)
+
+    # Build points to check: all 10 planets + 4 angles
+    points_to_check = [(name, p.abs_pos) for name, p in planets_list] + \
+                      [(name, a.abs_pos) for name, a in angles_list]
+
+    fixed_stars = []
+    for star_lookup, star_display in MAJOR_STARS:
+        try:
+            star_data, returned_name, ret_flag = swe.fixstar2_ut(star_lookup, jd, 0)
+            star_long = star_data[0]
+
+            for point_name, point_long in points_to_check:
+                diff = abs(point_long - star_long)
+                if diff > 180:
+                    diff = 360 - diff
+
+                if diff <= 1.0:
+                    fixed_stars.append({
+                        "star": star_display,
+                        "conjunct_body": point_name,
+                        "orb": diff
+                    })
+        except Exception:
+            # Silently skip stars that can't be calculated
+            pass
+
+    # DISTRIBUTIONS SECTION - Elements and Modalities
+    # Collect placements: 10 planets + ASC (11 total)
+    placements = [(name, p) for name, p in planets_list] + [('ASC', subject.ascendant)]
+
+    # Element distribution
+    element_count = {'Fire': 0, 'Earth': 0, 'Air': 0, 'Water': 0}
+    element_planets = {'Fire': [], 'Earth': [], 'Air': [], 'Water': []}
+
+    for name, body in placements:
+        element = ELEMENT_MAP.get(body.sign)
+        if element:
+            element_count[element] += 1
+            element_planets[element].append(name)
+
+    total_placements = sum(element_count.values())
+
+    elements = {}
+    for element in ['Fire', 'Earth', 'Air', 'Water']:
+        count = element_count[element]
+        percentage = (count / total_placements * 100) if total_placements > 0 else 0
+        elements[element] = {
+            "count": count,
+            "percentage": round(percentage, 1),
+            "planets": element_planets[element]
+        }
+
+    # Modality distribution
+    modality_count = {'Cardinal': 0, 'Fixed': 0, 'Mutable': 0}
+    modality_planets = {'Cardinal': [], 'Fixed': [], 'Mutable': []}
+
+    for name, body in placements:
+        modality = MODALITY_MAP.get(body.sign)
+        if modality:
+            modality_count[modality] += 1
+            modality_planets[modality].append(name)
+
+    modalities = {}
+    for modality in ['Cardinal', 'Fixed', 'Mutable']:
+        count = modality_count[modality]
+        percentage = (count / total_placements * 100) if total_placements > 0 else 0
+        modalities[modality] = {
+            "count": count,
+            "percentage": round(percentage, 1),
+            "planets": modality_planets[modality]
+        }
+
+    distributions = {
+        "elements": elements,
+        "modalities": modalities
+    }
+
+    # Assemble final dictionary
+    return {
+        "meta": meta,
+        "planets": planets,
+        "houses": houses,
+        "angles": angles,
+        "aspects": aspects,
+        "asteroids": asteroids,
+        "fixed_stars": fixed_stars,
+        "arabic_parts": arabic_parts,
+        "dignities": dignities,
+        "distributions": distributions
+    }
 
 
 def main():
@@ -587,6 +877,9 @@ Examples:
             percentage = (count / total_placements * 100) if total_placements > 0 else 0
             planets_str = ', '.join(modality_planets[modality]) if modality_planets[modality] else 'None'
             print(f"{modality:8} ({count}): {percentage:5.1f}% - {planets_str}")
+
+        # Build comprehensive JSON structure (for file output in Plan 02)
+        chart_dict = build_chart_json(subject, args)
 
         return 0
 
