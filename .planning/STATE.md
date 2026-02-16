@@ -4,17 +4,16 @@
 
 See: .planning/PROJECT.md (updated 2026-02-16)
 
-**Core value:** Load a person's complete natal chart data into Claude's context so it can answer deeply specific questions about life path, psychology, and astrological patterns based on real calculated positions — not generic horoscopes.
-**Current focus:** Phase 6: Context Loading & Interpretation
+**Core value:** Load a person's complete natal chart data into Claude's context so it can answer deeply specific questions about life path, psychology, and astrological patterns based on real calculated positions.
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 6 of 6 (Context Loading & Interpretation)
-Plan: 1 of 1 in current phase (06-01 complete)
-Status: Phase 06 complete — PROJECT COMPLETE
-Last activity: 2026-02-16 — Completed 06-01-PLAN.md (Astrological Interpretation Guide)
+Phase: v1.0 complete (6 phases, 8 plans shipped)
+Status: Milestone v1.0 archived — awaiting next milestone
+Last activity: 2026-02-16 — v1.0 milestone completed and archived
 
-Progress: [██████████] 100%
+Progress: [██████████] 100% (v1.0)
 
 ## Performance Metrics
 
@@ -34,60 +33,24 @@ Progress: [██████████] 100%
 | 05    | 1     | 3m    | 3m       |
 | 06    | 1     | 2m    | 2m       |
 
-**Recent Trend:**
-- Last 5 plans: 04-01 (4m), 04-02 (4m), 05-01 (3m), 06-01 (2m)
-- Trend: Improving velocity (2m for latest plan)
-
 *Updated after each plan completion*
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- Kerykeion over Flatlib: Built-in SVG generation, active maintenance, broader feature set
-- Placidus house system: Most widely used in Western astrology, Kerykeion default
-- Require exact birth time: Accuracy matters for house/angle calculations
-- Guide prompt on load: Transforms raw data into interpretive framework for Claude
-- **01-01:** Use Python 3.11 instead of 3.13 for compatibility with pyswisseph prebuilt wheels
-- **01-01:** Pin only kerykeion==5.7.2, let pip resolve transitive dependencies automatically
-- **02-01:** Year range 1800-current instead of 1900-current to support historical dates (Swiss Ephemeris supports antiquity)
-- **02-01:** Filter aspects to major types between 10 main planets (exclude nodes, Chiron, Lilith, angles)
-- **03-01:** Use 3-letter sign abbreviations (Ari, Tau, Gem) to match Kerykeion output format
-- **03-01:** Enable asteroids via active_points parameter in AstrologicalSubjectFactory
-- **03-01:** Day/night chart detection using Sun's house position (7-12 = day, 1-6 = night)
-- **03-01:** Traditional planets only (Sun-Saturn) for dignities due to disputed modern planet assignments
-- **03-02:** Swiss Ephemeris fixstar2_ut() for accurate fixed star positions with Kerykeion's bundled ephemeris data
-- **03-02:** Use abs_pos attribute for absolute ecliptic longitude (position is within-sign only)
-- **03-02:** 11 placements for element/modality distributions (10 planets + ASC)
-- **03-02:** Display planet names per category for immediate interpretive value
-- **04-01:** Dict construction instead of model_dump() for complete control over JSON structure including Phase 3 extended calculations
-- **04-01:** Optional --output-dir flag maintains backward compatibility while enabling file output mode
-- **04-01:** ChartDataFactory with fallback to direct subject approach handles Kerykeion API variations gracefully
-- **04-01:** Add python-slugify to requirements now (needed by Plan 02) to consolidate dependency management
-- **04-02:** Non-interactive overwrite protection using --force flag instead of input() for Claude Code skill compatibility
-- **04-02:** Automatic profile storage on every chart generation (removed optional --output-dir, always save to ~/.natal-charts/{slug}/)
-- **04-02:** Display existing birth data before rejecting overwrite to help users verify profile identity
-- **05-01:** Direct interpreter path (./venv/Scripts/python) in skill ensures project venv usage regardless of system Python config
-- **05-01:** SKILL-INSTALLATION.md reference document tracks skill installations outside repository
-- **06-01:** All 8 systematic reading areas included in single guide section for comprehensive self-contained framework
-- **06-01:** Traditional planets only for dignities (consistent with Phase 3 backend)
-- **06-01:** 13 fixed stars included with mythological interpretations (balanced coverage)
-- **06-01:** Question-answering templates for common queries ensure consistent interpretation quality
-- **06-01:** Ethical guidelines with language patterns prevent harmful interpretations and emphasize free will
+All v1.0 decisions logged in PROJECT.md Key Decisions table with outcomes.
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
-None yet.
+None.
 
 ## Session Continuity
 
-Last session: 2026-02-16T15:04:36Z
-Stopped at: Completed Phase 06 Plan 01 (Astrological Interpretation Guide) — PROJECT COMPLETE
-Resume file: .planning/phases/06-context-loading-interpretation/06-01-SUMMARY.md
+Last session: 2026-02-16
+Stopped at: v1.0 milestone archived
+Next step: /gsd:new-milestone
