@@ -238,8 +238,62 @@ Examples:
         if subject.houses_system_identifier != "P":
             print(f"Warning: Expected Placidus (P), got {subject.houses_system_identifier}", file=sys.stderr)
 
-        # Temporary confirmation message
-        print(f"Chart calculated successfully for {args.name}")
+        # Extract and display all planetary positions
+        print("\n=== PLANETARY POSITIONS ===")
+        planets = [
+            ('Sun', subject.sun), ('Moon', subject.moon),
+            ('Mercury', subject.mercury), ('Venus', subject.venus),
+            ('Mars', subject.mars), ('Jupiter', subject.jupiter),
+            ('Saturn', subject.saturn), ('Uranus', subject.uranus),
+            ('Neptune', subject.neptune), ('Pluto', subject.pluto),
+        ]
+        for name, planet in planets:
+            retrograde = " (R)" if getattr(planet, 'retrograde', False) else ""
+            # Calculate position within sign (0-30 degrees)
+            position_in_sign = planet.position % 30
+            print(f"{name:10} {planet.sign:3} {position_in_sign:6.2f}° House {planet.house}{retrograde}")
+
+        # Extract and display all house cusps
+        print("\n=== HOUSE CUSPS (Placidus) ===")
+        houses = [
+            subject.first_house, subject.second_house, subject.third_house,
+            subject.fourth_house, subject.fifth_house, subject.sixth_house,
+            subject.seventh_house, subject.eighth_house, subject.ninth_house,
+            subject.tenth_house, subject.eleventh_house, subject.twelfth_house,
+        ]
+        for i, house in enumerate(houses, 1):
+            position_in_sign = house.position % 30
+            print(f"House {i:2}   {house.sign:3} {position_in_sign:6.2f}°")
+
+        # Extract and display all angles
+        print("\n=== ANGLES ===")
+        angles = [
+            ('ASC', subject.ascendant),
+            ('MC', subject.medium_coeli),
+            ('DSC', subject.descendant),
+            ('IC', subject.imum_coeli),
+        ]
+        for name, angle in angles:
+            position_in_sign = angle.position % 30
+            print(f"{name:3}        {angle.sign:3} {position_in_sign:6.2f}°")
+
+        # Calculate and display major aspects
+        print("\n=== MAJOR ASPECTS ===")
+        natal_aspects = NatalAspects(subject)
+        major_types = ['conjunction', 'opposition', 'trine', 'square', 'sextile']
+        # Filter for major aspects between the 10 main planets only
+        planet_names = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
+        filtered = [
+            asp for asp in natal_aspects.all_aspects
+            if asp.aspect in major_types
+            and asp.p1_name in planet_names
+            and asp.p2_name in planet_names
+        ]
+        print(f"Found {len(filtered)} major aspects:")
+        for asp in filtered:
+            # Format aspect movement status
+            movement = asp.aspect_movement if hasattr(asp, 'aspect_movement') else ''
+            print(f"{asp.p1_name:10} {asp.aspect:12} {asp.p2_name:10} (orb: {asp.orbit:.2f}°, {movement})")
 
         return 0
 
