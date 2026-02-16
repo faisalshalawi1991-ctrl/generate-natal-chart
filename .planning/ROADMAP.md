@@ -119,10 +119,10 @@ Plans:
   2. Astrologer interpretation guide prompt injects alongside raw JSON
   3. Chart JSON auto-loads into context immediately after new chart creation
   4. Claude can answer specific questions about planetary aspects, house placements, and patterns from loaded chart data
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD
+- [ ] 06-01-PLAN.md — Astrologer interpretation guide integration into SKILL.md with end-to-end verification
 
 ## Progress
 
@@ -136,4 +136,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Extended Calculations | 2/2 | Complete | 2026-02-16 |
 | 4. Data Output & Storage | 0/? | Not started | - |
 | 5. Claude Code Skill Layer | 0/1 | Not started | - |
-| 6. Context Loading & Interpretation | 0/? | Not started | - |
+| 6. Context Loading & Interpretation | 0/1 | Not started | - |
