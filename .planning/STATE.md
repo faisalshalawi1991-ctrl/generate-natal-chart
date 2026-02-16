@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-16)
 ## Current Position
 
 Phase: 4 of 6 (Data Output & Storage)
-Plan: 1 of 2 in current phase (04-01 complete)
-Status: Phase 04 in progress
-Last activity: 2026-02-16 — Completed 04-01-PLAN.md (JSON Export and SVG Chart Generation)
+Plan: 2 of 2 in current phase (04-02 complete)
+Status: Phase 04 complete
+Last activity: 2026-02-16 — Completed 04-02-PLAN.md (Profile Management System)
 
-Progress: [███████░░░] 70%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 4.4 minutes
-- Total execution time: 0.37 hours
+- Total plans completed: 6
+- Average duration: 4.3 minutes
+- Total execution time: 0.43 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [███████░░░] 70%
 | 01    | 1     | 6m    | 6m       |
 | 02    | 1     | 4m    | 4m       |
 | 03    | 2     | 8m    | 4m       |
-| 04    | 1     | 4m    | 4m       |
+| 04    | 2     | 8m    | 4m       |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (4m), 03-01 (2m), 03-02 (6m), 04-01 (4m)
+- Last 5 plans: 03-01 (2m), 03-02 (6m), 04-01 (4m), 04-02 (4m)
 - Trend: Stable velocity (averaging 4m per plan)
 
 *Updated after each plan completion*
@@ -65,6 +65,9 @@ Recent decisions affecting current work:
 - **04-01:** Optional --output-dir flag maintains backward compatibility while enabling file output mode
 - **04-01:** ChartDataFactory with fallback to direct subject approach handles Kerykeion API variations gracefully
 - **04-01:** Add python-slugify to requirements now (needed by Plan 02) to consolidate dependency management
+- **04-02:** Non-interactive overwrite protection using --force flag instead of input() for Claude Code skill compatibility
+- **04-02:** Automatic profile storage on every chart generation (removed optional --output-dir, always save to ~/.natal-charts/{slug}/)
+- **04-02:** Display existing birth data before rejecting overwrite to help users verify profile identity
 
 ### Pending Todos
 
@@ -76,6 +79,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-16T14:00:12Z
-Stopped at: Completed Phase 04 Plan 01 (JSON Export and SVG Chart Generation)
-Resume file: .planning/phases/04-data-output-storage/04-01-SUMMARY.md
+Last session: 2026-02-16T14:06:47Z
+Stopped at: Completed Phase 04 Plan 02 (Profile Management System)
+Resume file: .planning/phases/04-data-output-storage/04-02-SUMMARY.md
