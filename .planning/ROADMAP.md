@@ -30,10 +30,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Kerykeion library is installed and version is pinned in requirements file
   3. Script successfully creates AstrologicalSubject object from test birth data
   4. Cross-platform path handling works correctly using pathlib
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD
+- [ ] 01-01-PLAN.md — Project structure, pinned dependencies, CLI script with Kerykeion integration
 
 ### Phase 2: Core Calculation Engine
 **Goal**: All essential astrological calculations work correctly with validated input
@@ -129,7 +129,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Setup | 0/? | Not started | - |
+| 1. Foundation & Setup | 0/1 | Planning complete | - |
 | 2. Core Calculation Engine | 0/? | Not started | - |
 | 3. Extended Calculations | 0/? | Not started | - |
 | 4. Data Output & Storage | 0/? | Not started | - |
