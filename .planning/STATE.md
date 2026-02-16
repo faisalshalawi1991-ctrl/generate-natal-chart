@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-16)
 
 **Core value:** Load a person's complete natal chart data into Claude's context so it can answer deeply specific questions about life path, psychology, and astrological patterns based on real calculated positions — not generic horoscopes.
-**Current focus:** Phase 2: Core Calculation Engine
+**Current focus:** Phase 3: Extended Calculations
 
 ## Current Position
 
-Phase: 2 of 6 (Core Calculation Engine)
-Plan: 1 of 1 in current phase (02-01 complete)
-Status: Phase 02 complete
-Last activity: 2026-02-16 — Completed 02-01-PLAN.md (Dual-mode natal chart calculator)
+Phase: 3 of 6 (Extended Calculations)
+Plan: 1 of 2 in current phase (03-01 complete)
+Status: Phase 03 in progress
+Last activity: 2026-02-16 — Completed 03-01-PLAN.md (Asteroids, Arabic Parts, Essential Dignities)
 
-Progress: [████░░░░░░] 33%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 5 minutes
-- Total execution time: 0.17 hours
+- Total plans completed: 3
+- Average duration: 4 minutes
+- Total execution time: 0.19 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [████░░░░░░] 33%
 |-------|-------|-------|----------|
 | 01    | 1     | 6m    | 6m       |
 | 02    | 1     | 4m    | 4m       |
+| 03    | 1     | 2m    | 2m       |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (6m), 02-01 (4m)
-- Trend: Improving velocity (6m → 4m)
+- Last 5 plans: 01-01 (6m), 02-01 (4m), 03-01 (2m)
+- Trend: Excellent velocity improvement (6m → 4m → 2m)
 
 *Updated after each plan completion*
 
@@ -51,6 +52,10 @@ Recent decisions affecting current work:
 - **01-01:** Pin only kerykeion==5.7.2, let pip resolve transitive dependencies automatically
 - **02-01:** Year range 1800-current instead of 1900-current to support historical dates (Swiss Ephemeris supports antiquity)
 - **02-01:** Filter aspects to major types between 10 main planets (exclude nodes, Chiron, Lilith, angles)
+- **03-01:** Use 3-letter sign abbreviations (Ari, Tau, Gem) to match Kerykeion output format
+- **03-01:** Enable asteroids via active_points parameter in AstrologicalSubjectFactory
+- **03-01:** Day/night chart detection using Sun's house position (7-12 = day, 1-6 = night)
+- **03-01:** Traditional planets only (Sun-Saturn) for dignities due to disputed modern planet assignments
 
 ### Pending Todos
 
@@ -62,6 +67,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-16T12:45:26Z
-Stopped at: Completed Phase 02 Plan 01 (Dual-mode natal chart calculator)
-Resume file: .planning/phases/02-core-calculation-engine/02-01-SUMMARY.md
+Last session: 2026-02-16T13:17:30Z
+Stopped at: Completed Phase 03 Plan 01 (Asteroids, Arabic Parts, Essential Dignities)
+Resume file: .planning/phases/03-extended-calculations/03-01-SUMMARY.md
