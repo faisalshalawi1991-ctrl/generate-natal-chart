@@ -99,16 +99,16 @@ Plans:
 **Depends on**: Phase 4
 **Requirements**: INFR-01, INFR-02, INTG-04
 **Success Criteria** (what must be TRUE):
-  1. Skill definition file exists in ~/.claude/commands/
+  1. Skill definition file exists in ~/.claude/skills/natal-chart/ (updated from commands/ per research)
   2. Invoking skill with birth details creates new chart
   3. Invoking skill without arguments lists existing profiles
   4. User can select profile from list to load
   5. Skill correctly routes between create, list, and load modes based on arguments
   6. Python backend is invoked via bash from skill
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD
+- [ ] 05-01-PLAN.md — Skill definition with three-mode routing and backend integration verification
 
 ### Phase 6: Context Loading & Interpretation
 **Goal**: Chart JSON loads into Claude's context with expert interpretation guide enabling specific astrological analysis
@@ -135,5 +135,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Core Calculation Engine | 1/1 | Complete | 2026-02-16 |
 | 3. Extended Calculations | 2/2 | Complete | 2026-02-16 |
 | 4. Data Output & Storage | 0/? | Not started | - |
-| 5. Claude Code Skill Layer | 0/? | Not started | - |
+| 5. Claude Code Skill Layer | 0/1 | Not started | - |
 | 6. Context Loading & Interpretation | 0/? | Not started | - |
