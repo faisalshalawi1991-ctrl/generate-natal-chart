@@ -48,6 +48,23 @@ MAJOR_STARS = [
     ('algol', 'Algol'),            # Demon Star, ~26 Tau
 ]
 
+# Element mapping for zodiac signs
+# Keys match Kerykeion's sign format (3-letter abbreviations)
+ELEMENT_MAP = {
+    'Ari': 'Fire', 'Leo': 'Fire', 'Sag': 'Fire',
+    'Tau': 'Earth', 'Vir': 'Earth', 'Cap': 'Earth',
+    'Gem': 'Air', 'Lib': 'Air', 'Aqu': 'Air',
+    'Can': 'Water', 'Sco': 'Water', 'Pis': 'Water',
+}
+
+# Modality mapping for zodiac signs
+# Keys match Kerykeion's sign format (3-letter abbreviations)
+MODALITY_MAP = {
+    'Ari': 'Cardinal', 'Can': 'Cardinal', 'Lib': 'Cardinal', 'Cap': 'Cardinal',
+    'Tau': 'Fixed', 'Leo': 'Fixed', 'Sco': 'Fixed', 'Aqu': 'Fixed',
+    'Gem': 'Mutable', 'Vir': 'Mutable', 'Sag': 'Mutable', 'Pis': 'Mutable',
+}
+
 
 def valid_date(s):
     """
@@ -519,6 +536,57 @@ Examples:
                 print(f"{star_name} conjunct {point_name} (orb: {orb:.2f} deg)")
         else:
             print("No major fixed star conjunctions detected")
+
+        # Calculate and display element distribution
+        print("\n=== ELEMENT DISTRIBUTION ===")
+
+        # Collect placements: 10 planets + ASC (11 total)
+        placements = [(name, p) for name, p in planets] + [('ASC', subject.ascendant)]
+
+        # Count elements and track which planets are in each
+        element_count = {'Fire': 0, 'Earth': 0, 'Air': 0, 'Water': 0}
+        element_planets = {'Fire': [], 'Earth': [], 'Air': [], 'Water': []}
+
+        for name, body in placements:
+            element = ELEMENT_MAP.get(body.sign)
+            if element:
+                element_count[element] += 1
+                element_planets[element].append(name)
+
+        # Display total
+        total_placements = sum(element_count.values())
+        print(f"Total placements: {total_placements}")
+
+        # Display each element with count, percentage, and planet names
+        for element in ['Fire', 'Earth', 'Air', 'Water']:
+            count = element_count[element]
+            percentage = (count / total_placements * 100) if total_placements > 0 else 0
+            planets_str = ', '.join(element_planets[element]) if element_planets[element] else 'None'
+            print(f"{element:5} ({count}): {percentage:5.1f}% - {planets_str}")
+
+        # Calculate and display modality distribution
+        print("\n=== MODALITY DISTRIBUTION ===")
+
+        # Count modalities and track which planets are in each
+        modality_count = {'Cardinal': 0, 'Fixed': 0, 'Mutable': 0}
+        modality_planets = {'Cardinal': [], 'Fixed': [], 'Mutable': []}
+
+        for name, body in placements:
+            modality = MODALITY_MAP.get(body.sign)
+            if modality:
+                modality_count[modality] += 1
+                modality_planets[modality].append(name)
+
+        # Display total
+        total_placements = sum(modality_count.values())
+        print(f"Total placements: {total_placements}")
+
+        # Display each modality with count, percentage, and planet names
+        for modality in ['Cardinal', 'Fixed', 'Mutable']:
+            count = modality_count[modality]
+            percentage = (count / total_placements * 100) if total_placements > 0 else 0
+            planets_str = ', '.join(modality_planets[modality]) if modality_planets[modality] else 'None'
+            print(f"{modality:8} ({count}): {percentage:5.1f}% - {planets_str}")
 
         return 0
 
