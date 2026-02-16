@@ -102,6 +102,24 @@ def valid_longitude(s):
         raise argparse.ArgumentTypeError(f"Invalid longitude '{s}': {e}")
 
 
+def position_to_sign_degree(position):
+    """
+    Convert absolute ecliptic longitude (0-360°) to zodiac sign and degree within sign.
+
+    Args:
+        position: Absolute ecliptic longitude in degrees (0-360)
+
+    Returns:
+        tuple: (sign_abbreviation, degree_within_sign)
+    """
+    # Sign abbreviations matching Kerykeion's 3-letter format
+    signs = ['Ari', 'Tau', 'Gem', 'Can', 'Leo', 'Vir',
+             'Lib', 'Sco', 'Sag', 'Cap', 'Aqu', 'Pis']
+    sign_index = int(position // 30) % 12
+    degree = position % 30
+    return signs[sign_index], degree
+
+
 def main():
     """
     Main entry point for the astrology calculation CLI.
@@ -323,6 +341,53 @@ Examples:
                 print(f"{name:12} {body.sign:3} {position_in_sign:6.2f}° House {body.house}{retrograde}")
             else:
                 print(f"{name:12} Not available")
+
+        # Calculate and display Arabic Parts
+        print("\n=== ARABIC PARTS ===")
+
+        # Determine day/night chart based on Sun's house position
+        # Day chart: Sun in houses 7-12 (above horizon)
+        # Night chart: Sun in houses 1-6 (below horizon)
+        sun_house_str = str(subject.sun.house)
+        # Extract house number from string like "Ninth_House" or just "9"
+        house_names = {
+            'First_House': 1, 'Second_House': 2, 'Third_House': 3, 'Fourth_House': 4,
+            'Fifth_House': 5, 'Sixth_House': 6, 'Seventh_House': 7, 'Eighth_House': 8,
+            'Ninth_House': 9, 'Tenth_House': 10, 'Eleventh_House': 11, 'Twelfth_House': 12
+        }
+        sun_house = house_names.get(sun_house_str, int(sun_house_str) if sun_house_str.isdigit() else 1)
+        is_day_chart = 7 <= sun_house <= 12
+
+        # Get absolute positions
+        asc_pos = subject.ascendant.position
+        sun_pos = subject.sun.position
+        moon_pos = subject.moon.position
+
+        # Calculate Part of Fortune
+        if is_day_chart:
+            # Day formula: ASC + Moon - Sun
+            fortune_pos = (asc_pos + moon_pos - sun_pos) % 360
+        else:
+            # Night formula: ASC + Sun - Moon
+            fortune_pos = (asc_pos + sun_pos - moon_pos) % 360
+
+        # Calculate Part of Spirit (reverse of Fortune)
+        if is_day_chart:
+            # Day formula: ASC + Sun - Moon
+            spirit_pos = (asc_pos + sun_pos - moon_pos) % 360
+        else:
+            # Night formula: ASC + Moon - Sun
+            spirit_pos = (asc_pos + moon_pos - sun_pos) % 360
+
+        # Convert to sign and degree
+        fortune_sign, fortune_degree = position_to_sign_degree(fortune_pos)
+        spirit_sign, spirit_degree = position_to_sign_degree(spirit_pos)
+
+        # Display results
+        chart_type = "Day" if is_day_chart else "Night"
+        print(f"Chart Type: {chart_type}")
+        print(f"Part of Fortune:  {fortune_sign} {fortune_degree:6.2f}°")
+        print(f"Part of Spirit:   {spirit_sign} {spirit_degree:6.2f}°")
 
         return 0
 
