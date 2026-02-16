@@ -17,6 +17,11 @@ from kerykeion import AstrologicalSubjectFactory, NatalAspects, KerykeionExcepti
 from kerykeion.charts.chart_drawer import ChartDrawer
 import swisseph as swe
 import kerykeion
+from slugify import slugify
+
+
+# Profile storage directory
+CHARTS_DIR = Path("~/.natal-charts").expanduser()
 
 
 # Essential dignities lookup table for traditional planets (Sun through Saturn)
@@ -204,6 +209,41 @@ def get_planet_dignities(planet_name, planet_sign):
         dignities.append('Peregrine')
 
     return dignities
+
+
+def check_existing_profile(profile_dir, person_name):
+    """
+    Check if profile exists and display existing data. Returns True if ok to proceed.
+
+    Args:
+        profile_dir: Path to the profile directory
+        person_name: Name of the person (for display)
+
+    Returns:
+        True if profile doesn't exist (ok to proceed), False if exists (needs confirmation)
+    """
+    chart_json = profile_dir / "chart.json"
+    if not chart_json.exists():
+        return True  # No existing profile, proceed
+
+    # Load and display existing birth details
+    with open(chart_json, 'r', encoding='utf-8') as f:
+        existing = json.load(f)
+
+    meta = existing.get('meta', {})
+    loc = meta.get('location', {})
+    print(f"\nWARNING: Profile '{person_name}' already exists")
+    print(f"  Birth date: {meta.get('birth_date', 'Unknown')}")
+    print(f"  Birth time: {meta.get('birth_time', 'Unknown')}")
+    print(f"  Location:   {loc.get('city', 'N/A')}, {loc.get('nation', 'N/A')}")
+    print(f"  Lat/Lng:    {loc.get('latitude', 'N/A')}, {loc.get('longitude', 'N/A')}")
+    print(f"  Timezone:   {loc.get('timezone', 'N/A')}")
+    print(f"  Generated:  {meta.get('generated_at', 'Unknown')}")
+    print()
+
+    # In non-interactive mode (piped input), default to not overwriting
+    # For script use, require --force flag
+    return False  # Signal that confirmation is needed
 
 
 def build_chart_json(subject, args):
@@ -568,9 +608,9 @@ Examples:
     )
 
     parser.add_argument(
-        "--output-dir",
-        type=str,
-        help="Directory to save chart.json and chart.svg files (optional)"
+        "--force",
+        action="store_true",
+        help="Overwrite existing profile without confirmation"
     )
 
     try:
@@ -888,50 +928,58 @@ Examples:
         # Build comprehensive JSON structure
         chart_dict = build_chart_json(subject, args)
 
-        # Write output files if --output-dir is provided
-        if args.output_dir:
-            output_path = Path(args.output_dir)
-            output_path.mkdir(parents=True, exist_ok=True)
+        # Save to profile directory
+        profile_slug = slugify(args.name)
+        profile_dir = CHARTS_DIR / profile_slug
 
-            # Write chart.json
-            json_file = output_path / "chart.json"
-            with open(json_file, 'w', encoding='utf-8') as f:
-                json.dump(chart_dict, f, indent=2, ensure_ascii=False)
+        # Check for existing profile
+        if not args.force and not check_existing_profile(profile_dir, args.name):
+            print("Use --force to overwrite existing profile")
+            return 1
 
-            # Generate SVG using ChartDrawer
+        # Create directory and save files
+        profile_dir.mkdir(parents=True, exist_ok=True)
+
+        # Write chart.json
+        json_file = profile_dir / "chart.json"
+        with open(json_file, 'w', encoding='utf-8') as f:
+            json.dump(chart_dict, f, indent=2, ensure_ascii=False)
+
+        # Generate SVG using ChartDrawer
+        try:
+            # Try ChartDataFactory approach first (5.7.2 API)
             try:
-                # Try ChartDataFactory approach first (5.7.2 API)
-                try:
-                    from kerykeion.chart_data_factory import ChartDataFactory
-                    chart_data = ChartDataFactory.create_natal_chart_data(subject)
-                    drawer = ChartDrawer(chart_data=chart_data)
-                    drawer.save_svg(output_path=str(output_path), filename="chart", remove_css_variables=True)
-                except (ImportError, AttributeError):
-                    # Fall back to direct subject approach
-                    drawer = ChartDrawer(subject)
-                    drawer.save_svg(output_path=str(output_path), filename="chart")
+                from kerykeion.chart_data_factory import ChartDataFactory
+                chart_data = ChartDataFactory.create_natal_chart_data(subject)
+                drawer = ChartDrawer(chart_data=chart_data)
+                drawer.save_svg(output_path=str(profile_dir), filename="chart", remove_css_variables=True)
+            except (ImportError, AttributeError):
+                # Fall back to direct subject approach
+                drawer = ChartDrawer(subject)
+                drawer.save_svg(output_path=str(profile_dir), filename="chart")
 
-                # Kerykeion may create files with different names - find and rename if needed
-                svg_files = list(output_path.glob("chart*.svg"))
-                if svg_files:
-                    # If the file isn't exactly "chart.svg", rename it
-                    if svg_files[0].name != "chart.svg":
-                        svg_files[0].rename(output_path / "chart.svg")
+            # Kerykeion may create files with different names - find and rename if needed
+            svg_files = list(profile_dir.glob("chart*.svg"))
+            if svg_files:
+                # If the file isn't exactly "chart.svg", rename it
+                if svg_files[0].name != "chart.svg":
+                    svg_files[0].rename(profile_dir / "chart.svg")
 
-                svg_file = output_path / "chart.svg"
-                if not svg_file.exists():
-                    print(f"Warning: SVG generation may have failed - chart.svg not found", file=sys.stderr)
+            svg_file = profile_dir / "chart.svg"
+            if not svg_file.exists():
+                print(f"Warning: SVG generation may have failed - chart.svg not found", file=sys.stderr)
 
-            except Exception as e:
-                print(f"Warning: SVG generation failed: {e}", file=sys.stderr)
+        except Exception as e:
+            print(f"Warning: SVG generation failed: {e}", file=sys.stderr)
 
-            # Print confirmation
-            print(f"\n=== CHART FILES SAVED ===")
-            print(f"Output directory: {output_path.absolute()}")
-            if json_file.exists():
-                print(f"  - chart.json ({json_file.stat().st_size} bytes)")
-            if (output_path / "chart.svg").exists():
-                print(f"  - chart.svg ({(output_path / 'chart.svg').stat().st_size} bytes)")
+        # Print confirmation
+        print(f"\n=== CHART SAVED ===")
+        print(f"Profile: {args.name}")
+        print(f"Location: {profile_dir.absolute()}")
+        if json_file.exists():
+            print(f"  - chart.json ({json_file.stat().st_size} bytes)")
+        if (profile_dir / "chart.svg").exists():
+            print(f"  - chart.svg ({(profile_dir / 'chart.svg').stat().st_size} bytes)")
 
         return 0
 
