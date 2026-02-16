@@ -15,6 +15,19 @@ from datetime import datetime
 from kerykeion import AstrologicalSubjectFactory, NatalAspects, KerykeionException
 
 
+# Essential dignities lookup table for traditional planets (Sun through Saturn)
+# Uses 3-letter sign abbreviations matching Kerykeion output format
+DIGNITIES = {
+    'Sun': {'domicile': ['Leo'], 'exaltation': ['Ari'], 'detriment': ['Aqu'], 'fall': ['Lib']},
+    'Moon': {'domicile': ['Can'], 'exaltation': ['Tau'], 'detriment': ['Cap'], 'fall': ['Sco']},
+    'Mercury': {'domicile': ['Gem', 'Vir'], 'exaltation': ['Vir'], 'detriment': ['Sag', 'Pis'], 'fall': ['Pis']},
+    'Venus': {'domicile': ['Tau', 'Lib'], 'exaltation': ['Pis'], 'detriment': ['Sco', 'Ari'], 'fall': ['Vir']},
+    'Mars': {'domicile': ['Ari', 'Sco'], 'exaltation': ['Cap'], 'detriment': ['Lib', 'Tau'], 'fall': ['Can']},
+    'Jupiter': {'domicile': ['Sag', 'Pis'], 'exaltation': ['Can'], 'detriment': ['Gem', 'Vir'], 'fall': ['Cap']},
+    'Saturn': {'domicile': ['Cap', 'Aqu'], 'exaltation': ['Lib'], 'detriment': ['Can', 'Leo'], 'fall': ['Ari']},
+}
+
+
 def valid_date(s):
     """
     Validate date string in YYYY-MM-DD format.
@@ -118,6 +131,39 @@ def position_to_sign_degree(position):
     sign_index = int(position // 30) % 12
     degree = position % 30
     return signs[sign_index], degree
+
+
+def get_planet_dignities(planet_name, planet_sign):
+    """
+    Determine essential dignities for a planet based on its sign placement.
+
+    Args:
+        planet_name: Name of the planet (e.g., 'Sun', 'Moon', 'Mercury')
+        planet_sign: Sign abbreviation (e.g., 'Ari', 'Tau', 'Gem')
+
+    Returns:
+        list: List of dignity strings (e.g., ['Domicile'], ['Exaltation'], ['Peregrine'])
+    """
+    if planet_name not in DIGNITIES:
+        return []  # Not a traditional planet
+
+    dignities = []
+    planet_data = DIGNITIES[planet_name]
+
+    if planet_sign in planet_data['domicile']:
+        dignities.append('Domicile')
+    if planet_sign in planet_data['exaltation']:
+        dignities.append('Exaltation')
+    if planet_sign in planet_data['detriment']:
+        dignities.append('Detriment')
+    if planet_sign in planet_data['fall']:
+        dignities.append('Fall')
+
+    # If no dignity found, planet is peregrine
+    if not dignities:
+        dignities.append('Peregrine')
+
+    return dignities
 
 
 def main():
@@ -388,6 +434,24 @@ Examples:
         print(f"Chart Type: {chart_type}")
         print(f"Part of Fortune:  {fortune_sign} {fortune_degree:6.2f}°")
         print(f"Part of Spirit:   {spirit_sign} {spirit_degree:6.2f}°")
+
+        # Display essential dignities for traditional planets
+        print("\n=== ESSENTIAL DIGNITIES ===")
+        traditional_planets = [
+            ('Sun', subject.sun),
+            ('Moon', subject.moon),
+            ('Mercury', subject.mercury),
+            ('Venus', subject.venus),
+            ('Mars', subject.mars),
+            ('Jupiter', subject.jupiter),
+            ('Saturn', subject.saturn),
+        ]
+        for name, planet in traditional_planets:
+            dignities = get_planet_dignities(name, planet.sign)
+            dignity_str = ', '.join(dignities) if dignities else 'None'
+            print(f"{name:10} in {planet.sign:3}  {dignity_str}")
+
+        print("\nNote: Traditional planets only (Sun-Saturn). Modern planet dignities (Uranus, Neptune, Pluto) are disputed and excluded.")
 
         return 0
 
