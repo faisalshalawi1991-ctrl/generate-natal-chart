@@ -535,6 +535,65 @@ def build_chart_json(subject, args):
     }
 
 
+def list_profiles():
+    """
+    List all existing chart profiles with person names and birth details.
+
+    Returns:
+        0 on success
+    """
+    if not CHARTS_DIR.exists():
+        print("No chart profiles found")
+        print(f"(Directory {CHARTS_DIR} does not exist)")
+        return 0
+
+    # Get all profile directories, skip hidden files
+    profiles = [
+        d for d in CHARTS_DIR.iterdir()
+        if d.is_dir() and not d.name.startswith('.')
+    ]
+
+    if not profiles:
+        print("No chart profiles found")
+        return 0
+
+    print(f"Found {len(profiles)} chart profile(s):\n")
+
+    for profile_dir in sorted(profiles):
+        chart_json = profile_dir / "chart.json"
+        chart_svg = profile_dir / "chart.svg"
+
+        # Display profile slug as header
+        print(f"  {profile_dir.name}/")
+
+        # Read chart.json for person details
+        if chart_json.exists():
+            try:
+                with open(chart_json, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                meta = data.get('meta', {})
+                loc = meta.get('location', {})
+                print(f"    Name:     {meta.get('name', 'Unknown')}")
+                print(f"    Born:     {meta.get('birth_date', '?')} at {meta.get('birth_time', '?')}")
+                city = loc.get('city')
+                nation = loc.get('nation')
+                if city and nation:
+                    print(f"    Location: {city}, {nation}")
+                else:
+                    print(f"    Location: {loc.get('latitude', '?')}, {loc.get('longitude', '?')} ({loc.get('timezone', '?')})")
+            except (json.JSONDecodeError, KeyError):
+                print("    (invalid chart data)")
+
+        # Show file status
+        files = []
+        if chart_json.exists(): files.append("chart.json")
+        if chart_svg.exists(): files.append("chart.svg")
+        print(f"    Files:    {', '.join(files) if files else 'none'}")
+        print()
+
+    return 0
+
+
 def main():
     """
     Main entry point for the astrology calculation CLI.
@@ -555,24 +614,23 @@ Examples:
         """
     )
 
-    # Positional argument
+    # Positional argument (optional when using --list)
     parser.add_argument(
         "name",
+        nargs="?",
         help="Person's name"
     )
 
-    # Required arguments
+    # Required arguments (when not using --list)
     parser.add_argument(
         "--date",
         type=valid_date,
-        required=True,
         help="Birth date in YYYY-MM-DD format"
     )
 
     parser.add_argument(
         "--time",
         type=valid_time,
-        required=True,
         help="Birth time in HH:MM format (24-hour)"
     )
 
@@ -608,6 +666,12 @@ Examples:
     )
 
     parser.add_argument(
+        "--list",
+        action="store_true",
+        help="List all existing chart profiles"
+    )
+
+    parser.add_argument(
         "--force",
         action="store_true",
         help="Overwrite existing profile without confirmation"
@@ -615,6 +679,20 @@ Examples:
 
     try:
         args = parser.parse_args()
+
+        # Handle --list flag
+        if args.list:
+            return list_profiles()
+
+        # Validate name is provided for chart generation
+        if not args.name:
+            parser.error("Name is required for chart generation (or use --list to list profiles)")
+
+        # Validate date and time are provided for chart generation
+        if not args.date:
+            parser.error("--date is required for chart generation")
+        if not args.time:
+            parser.error("--time is required for chart generation")
 
         # Validate location mode: must provide either GeoNames or coordinates (not both, not neither)
         has_geonames = args.city and args.nation
