@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-02-16)
 
 **Core value:** Load a person's complete natal chart data into Claude's context so it can answer deeply specific questions about life path, psychology, and astrological patterns based on real calculated positions — not generic horoscopes.
-**Current focus:** Phase 3: Extended Calculations
+**Current focus:** Phase 4: Data Output & Storage
 
 ## Current Position
 
