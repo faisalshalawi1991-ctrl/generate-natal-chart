@@ -201,7 +201,11 @@ Examples:
                     'city': args.city,
                     'nation': args.nation,
                     'online': True,
-                    'houses_system_identifier': 'P'
+                    'houses_system_identifier': 'P',
+                    'active_points': ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn',
+                                     'Uranus', 'Neptune', 'Pluto', 'Chiron', 'Mean_Lilith', 'True_Lilith',
+                                     'Ceres', 'Pallas', 'Juno', 'Vesta', 'Mean_North_Lunar_Node',
+                                     'Ascendant', 'Medium_Coeli', 'Descendant', 'Imum_Coeli']
                 }
                 if geonames_username:
                     kwargs['geonames_username'] = geonames_username
@@ -231,7 +235,11 @@ Examples:
                 lat=args.lat,
                 tz_str=args.tz,
                 online=False,
-                houses_system_identifier='P'
+                houses_system_identifier='P',
+                active_points=['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn',
+                              'Uranus', 'Neptune', 'Pluto', 'Chiron', 'Mean_Lilith', 'True_Lilith',
+                              'Ceres', 'Pallas', 'Juno', 'Vesta', 'Mean_North_Lunar_Node',
+                              'Ascendant', 'Medium_Coeli', 'Descendant', 'Imum_Coeli']
             )
 
         # Verify Placidus house system
@@ -294,6 +302,27 @@ Examples:
             # Format aspect movement status
             movement = asp.aspect_movement if hasattr(asp, 'aspect_movement') else ''
             print(f"{asp.p1_name:10} {asp.aspect:12} {asp.p2_name:10} (orb: {asp.orbit:.2f}°, {movement})")
+
+        # Extract and display asteroid positions
+        print("\n=== ASTEROIDS ===")
+        asteroid_attrs = [
+            ('Chiron', 'chiron'),
+            ('Mean Lilith', 'mean_lilith'),
+            ('True Lilith', 'true_lilith'),
+            ('Ceres', 'ceres'),
+            ('Pallas', 'pallas'),
+            ('Juno', 'juno'),
+            ('Vesta', 'vesta'),
+        ]
+        for name, attr in asteroid_attrs:
+            body = getattr(subject, attr, None)
+            if body is not None:
+                retrograde = " (R)" if getattr(body, 'retrograde', False) else ""
+                # Calculate position within sign (0-30 degrees)
+                position_in_sign = body.position % 30
+                print(f"{name:12} {body.sign:3} {position_in_sign:6.2f}° House {body.house}{retrograde}")
+            else:
+                print(f"{name:12} Not available")
 
         return 0
 
