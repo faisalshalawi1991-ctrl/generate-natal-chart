@@ -28,7 +28,18 @@ Load a person's complete natal chart data into Claude's context so it can answer
 
 ### Active
 
-(None — next milestone not yet planned)
+## Current Milestone: v1.1 Transits & Progressions
+
+**Goal:** Add time-aware astrological analysis — current transits, transit timelines, secondary progressions, and solar arc directions — layered on top of the existing natal chart system.
+
+**Target features:**
+- Current transit snapshot auto-loaded with chart profiles
+- Transit timeline with preset ranges + custom date support
+- Secondary progressions (day-for-a-year)
+- Solar arc directions
+- Dedicated transit/progression interpretation guide
+- Fresh calculation with optional snapshot saves
+- Both auto-include and targeted query invocation modes
 
 ### Out of Scope
 
@@ -37,7 +48,6 @@ Load a person's complete natal chart data into Claude's context so it can answer
 - OAuth/API-based chart sources — local calculation only
 - Mobile or web UI — Claude Code CLI only
 - Configurable house systems — Placidus only for v1
-- Transit charts or progressions — natal only for v1
 - Offline mode — GeoNames required for city lookup
 
 ## Context
@@ -74,4 +84,4 @@ All 36 requirements satisfied across 6 phases in ~30 minutes execution time.
 | Direct venv interpreter path | ./venv/Scripts/python in skill ensures correct Python environment | ✓ Good |
 
 ---
-*Last updated: 2026-02-16 after v1.0 milestone*
+*Last updated: 2026-02-17 after v1.1 milestone start*
