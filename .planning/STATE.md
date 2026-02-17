@@ -6,16 +6,16 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** Load a person's complete natal chart data into Claude's context so it can answer deeply specific questions about life path, psychology, and astrological patterns based on real calculated positions.
 
-**Current focus:** Phase 11 - Interpretation Guide & Context Injection (v1.1 skill layer)
+**Current focus:** Phase 12 - Snapshot Storage (v1.1 final phase)
 
 ## Current Position
 
-Phase: 11 of 12 (Interpretation Guide & Context Injection)
-Plan: 2 of 2 complete
-Status: Phase 11 complete
-Last activity: 2026-02-17 — Phase 11 plan 02 executed (transit auto-load cross-references added to all three mode entry points, closing INTG-01)
+Phase: 12 of 12 (Snapshot Storage)
+Plan: 1 of 1 complete
+Status: Phase 12 complete — v1.1 COMPLETE
+Last activity: 2026-02-17 — Phase 12 plan 01 executed (save_snapshot() helper, --save flag, call sites in all three predictive modes, SKILL.md routing update)
 
-Progress: [██████████████░░░░░░] 83% (11/12 phases complete, v1.1 near-complete)
+Progress: [████████████████████] 100% (12/12 phases complete, v1.1 COMPLETE)
 
 ## Performance Metrics
 
@@ -39,6 +39,7 @@ Progress: [██████████████░░░░░░] 83% (11
 | 9 | 1 | ~12 min | ~12 min |
 | 10 | 1 | ~3 min | ~3 min |
 | 11 | 2 | ~7 min | ~3.5 min |
+| 12 | 1 | ~3 min | ~3 min |
 
 **Recent Trend:**
 - v1.0 execution was extremely fast (30 minutes total for 6 phases, 8 plans)
@@ -48,8 +49,9 @@ Progress: [██████████████░░░░░░] 83% (11
 - v1.1 Phase 10: 3 minutes, clean execution, 1 minor bug fix (wrong dict key)
 - v1.1 Phase 11 plan 01: 4 minutes, 1 auto-fixed field path bug in guide
 - v1.1 Phase 11 plan 02: 3 minutes, no deviations, closed INTG-01 transit auto-load gap
+- v1.1 Phase 12 plan 01: 3 minutes, no deviations, closed INTG-05/INTG-06 snapshot storage (v1.1 COMPLETE)
 
-*Updated: 2026-02-17 after Phase 11 plan 02 completion*
+*Updated: 2026-02-17 after Phase 12 plan 01 completion*
 
 ## Accumulated Context
 
@@ -84,6 +86,12 @@ Recent decisions affecting current work:
 - **Bash stdout as transit data**: Predictive JSON is stdout from Bash, not a Read file — consistent with ephemeral computation pattern (Phase 11)
 - **Single SKILL.md for all modes**: No separate predictive guide file — consistent with Phase 6 inline pattern (Phase 11)
 - **One-line cross-reference per mode section**: Minimal change that closes INTG-01 routing ambiguity without restructuring mode sections (Phase 11 plan 02)
+- **save_snapshot() placed after load_natal_profile()**: Logical grouping of profile I/O helpers (Phase 12)
+- **Save call site after print() and before return 0**: JSON stdout always complete before any file I/O (Phase 12)
+- **try/except around save_snapshot() call**: File write failure never corrupts or suppresses already-printed JSON (Phase 12)
+- **Confirmation to stderr only**: Preserves JSON parsability of stdout when --save is used (Phase 12)
+- **Mode string 'solar-arc' hyphenated**: Filename convention matches natural language (Phase 12)
+- **date_str sourced from meta field**: Guarantees YYYY-MM-DD format for filename (Phase 12)
 
 ### Pending Todos
 
@@ -91,9 +99,9 @@ None.
 
 ### Blockers/Concerns
 
-None. Phase 11 shipped successfully.
+None. Phase 12 shipped successfully. v1.1 is COMPLETE.
 
-**v1.1 architectural patterns established (Phases 7-11):**
+**v1.1 architectural patterns established (Phases 7-12):**
 - Transit routing in main() via early-return before natal validation (same pattern as --list)
 - AspectsFactory.dual_chart_aspects with second_subject_is_fixed=True for transit-to-natal and progressed-to-natal
 - HouseComparisonFactory(transit, natal).first_points_in_second_houses for transit planet house lookup
@@ -109,9 +117,10 @@ None. Phase 11 shipped successfully.
 - SKILL.md auto-load pattern: chart.json Read + --transits Bash on every chart open (Phase 11)
 - Intent-to-flag routing table in SKILL.md for all 4 predictive modes (Phase 11)
 - Cross-reference pattern: mode-specific loading steps delegate to shared Context Loading section for transit auto-load (Phase 11 plan 02)
+- save_snapshot() pattern: helper after profile I/O group, call site after print()/before return, stderr-only confirm, try/except isolation (Phase 12)
 
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Phase 11 plan 02 complete — transit auto-load cross-references added to all three mode entry points, closing INTG-01
-Next step: Phase 12 (end-to-end v1.1 verification)
+Stopped at: Phase 12 plan 01 complete — snapshot storage shipped, v1.1 COMPLETE
+Next step: v1.1 is complete. Consider v1.2 planning or milestone audit.
