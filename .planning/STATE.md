@@ -6,16 +6,16 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** Load a person's complete natal chart data into Claude's context so it can answer deeply specific questions about life path, psychology, and astrological patterns based on real calculated positions.
 
-**Current focus:** Phase 8 - Transit Timelines (v1.1 Transits & Progressions milestone)
+**Current focus:** Phase 9 - Secondary Progressions (v1.1 Transits & Progressions milestone)
 
 ## Current Position
 
-Phase: 8 of 12 (Transit Timelines)
+Phase: 9 of 12 (Secondary Progressions)
 Plan: 1 of 1 complete
-Status: Phase 8 complete
-Last activity: 2026-02-17 — Phase 8 plan 01 executed (transit timeline generation)
+Status: Phase 9 complete
+Last activity: 2026-02-17 — Phase 9 plan 01 executed (secondary progressions calculation)
 
-Progress: [██████████░░░░░░░░░░] 60% (8/12 phases complete, v1.1 in progress)
+Progress: [████████████░░░░░░░░] 65% (9/12 phases complete, v1.1 in progress)
 
 ## Performance Metrics
 
@@ -36,13 +36,15 @@ Progress: [██████████░░░░░░░░░░] 60% (8/
 | 6 | 1 | ~5 min | ~5 min |
 | 7 | 1 | ~7 min | ~7 min |
 | 8 | 1 | ~8 min | ~8 min |
+| 9 | 1 | ~12 min | ~12 min |
 
 **Recent Trend:**
 - v1.0 execution was extremely fast (30 minutes total for 6 phases, 8 plans)
 - v1.1 Phase 7: 7 minutes, clean execution, no deviations
 - v1.1 Phase 8: 8 minutes, clean execution, no deviations
+- v1.1 Phase 9: 12 minutes, clean execution, no deviations
 
-*Updated: 2026-02-17 after Phase 8 completion*
+*Updated: 2026-02-17 after Phase 9 completion*
 
 ## Accumulated Context
 
@@ -63,6 +65,11 @@ Recent decisions affecting current work:
 - **timedelta fixed-day approximations for presets**: No dateutil dependency; 89-day approx for 3m is standard (Phase 8)
 - **Custom range validated at <=365 days**: Cleaner error than EphemerisDataFactory 730-day limit (Phase 8)
 - **Exact hit = last Applying day before Separating transition**: Day-resolution sufficient for transit timelines (Phase 8)
+- **Progressed subject uses natal lat/lng/tz**: Progressed Ascendant requires birthplace coordinates (not lat=0.0 like transits) (Phase 9)
+- **365.25 Julian year as day-for-year divisor**: Standard textbook formula; negligible difference from tropical year (Phase 9)
+- **PROG_DEFAULT_ORBS = 1-degree for all aspects**: Kepler College standard for progressed-to-natal aspects (Phase 9)
+- **Error if both --age and --target-date provided**: Avoids ambiguity; return 1 with stderr message (Phase 9)
+- **--prog-year defaults to target year portion**: Most contextually relevant for monthly Moon report (Phase 9)
 
 ### Pending Todos
 
@@ -70,19 +77,21 @@ None.
 
 ### Blockers/Concerns
 
-None. Phase 8 shipped successfully.
+None. Phase 9 shipped successfully.
 
-**v1.1 architectural patterns established (Phases 7-8):**
+**v1.1 architectural patterns established (Phases 7-9):**
 - Transit routing in main() via early-return before natal validation (same pattern as --list)
-- AspectsFactory.dual_chart_aspects with second_subject_is_fixed=True for transit-to-natal
+- AspectsFactory.dual_chart_aspects with second_subject_is_fixed=True for transit-to-natal and progressed-to-natal
 - HouseComparisonFactory(transit, natal).first_points_in_second_houses for transit planet house lookup
 - load_natal_profile() and build_transit_json() are reusable for Phases 9+
 - EphemerisDataFactory + TransitsTimeRangeFactory pipeline for time-range transit computation
 - build_timeline_events() Applying->Separating scan for exact hit detection
 - Flat chronological events list for Claude context reasoning
+- compute_progressed_jd() reusable for solar arcs (Phase 10)
+- build_monthly_moon() 12-call pattern reusable for any monthly progressed body tracking
 
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Phase 8 plan 01 complete — transit timeline generation implemented and verified
+Stopped at: Phase 9 plan 01 complete — secondary progressions implemented and verified
 Next step: Phase 9 (if v1.1 continues) — progressions or solar arcs building on transit pattern
