@@ -317,6 +317,26 @@ def load_natal_profile(slug):
     return subject, profile_data
 
 
+def save_snapshot(profile_dir, mode, date_str, data):
+    """
+    Write predictive snapshot JSON to the profile directory.
+
+    Args:
+        profile_dir: Path — ~/.natal-charts/{slug}/
+        mode:        str  — 'transit', 'progressions', or 'solar-arc'
+        date_str:    str  — YYYY-MM-DD for filename (from meta field)
+        data:        dict — already-assembled JSON dict from build_*_json()
+
+    Returns:
+        Path: The written file path (for confirmation message)
+    """
+    filename = f"{mode}-{date_str}.json"
+    out_path = profile_dir / filename
+    with open(out_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+    return out_path
+
+
 def build_transit_json(transit_subject, natal_subject, natal_data, query_date_str, slug):
     """
     Build a transit snapshot JSON dict from transit and natal AstrologicalSubject instances.
@@ -470,6 +490,15 @@ def calculate_transits(args):
 
         # Output to stdout
         print(json.dumps(transit_dict, indent=2))
+
+        if args.save:
+            date_str = transit_dict['meta'].get('query_date', 'unknown')
+            try:
+                out_path = save_snapshot(CHARTS_DIR / args.transits, 'transit', date_str, transit_dict)
+                print(f"Snapshot saved: {out_path}", file=sys.stderr)
+            except Exception as e:
+                print(f"Warning: Could not save snapshot: {e}", file=sys.stderr)
+
         return 0
 
     except FileNotFoundError as e:
@@ -1004,6 +1033,15 @@ def calculate_progressions(args):
             prog_year=prog_year,
         )
         print(json.dumps(prog_dict, indent=2))
+
+        if args.save:
+            date_str = prog_dict['meta'].get('target_date', 'unknown')
+            try:
+                out_path = save_snapshot(CHARTS_DIR / args.progressions, 'progressions', date_str, prog_dict)
+                print(f"Snapshot saved: {out_path}", file=sys.stderr)
+            except Exception as e:
+                print(f"Warning: Could not save snapshot: {e}", file=sys.stderr)
+
         return 0
 
     except FileNotFoundError as e:
@@ -1285,6 +1323,15 @@ def calculate_solar_arcs(args):
         # Build and emit JSON
         sarc_dict = build_solar_arc_json(natal_data, args.solar_arcs, birth_jd, target_jd, arc, arc_method)
         print(json.dumps(sarc_dict, indent=2))
+
+        if args.save:
+            date_str = sarc_dict['meta'].get('target_date', 'unknown')
+            try:
+                out_path = save_snapshot(CHARTS_DIR / args.solar_arcs, 'solar-arc', date_str, sarc_dict)
+                print(f"Snapshot saved: {out_path}", file=sys.stderr)
+            except Exception as e:
+                print(f"Warning: Could not save snapshot: {e}", file=sys.stderr)
+
         return 0
 
     except FileNotFoundError as e:
@@ -1810,6 +1857,12 @@ Examples:
         "--force",
         action="store_true",
         help="Overwrite existing profile without confirmation"
+    )
+
+    parser.add_argument(
+        '--save',
+        action='store_true',
+        help='Save snapshot to profile directory with date-based filename'
     )
 
     parser.add_argument(
