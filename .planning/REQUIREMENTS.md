@@ -81,33 +81,33 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TRAN-01 | — | Pending |
-| TRAN-02 | — | Pending |
-| TRAN-03 | — | Pending |
-| TRAN-04 | — | Pending |
-| TRAN-05 | — | Pending |
-| TRAN-06 | — | Pending |
-| TRAN-07 | — | Pending |
-| TRAN-08 | — | Pending |
-| PROG-01 | — | Pending |
-| PROG-02 | — | Pending |
-| PROG-03 | — | Pending |
-| PROG-04 | — | Pending |
-| SARC-01 | — | Pending |
-| SARC-02 | — | Pending |
-| SARC-03 | — | Pending |
-| INTG-01 | — | Pending |
-| INTG-02 | — | Pending |
-| INTG-03 | — | Pending |
-| INTG-04 | — | Pending |
-| INTG-05 | — | Pending |
-| INTG-06 | — | Pending |
+| TRAN-01 | Phase 7 | Pending |
+| TRAN-02 | Phase 7 | Pending |
+| TRAN-03 | Phase 7 | Pending |
+| TRAN-04 | Phase 7 | Pending |
+| TRAN-05 | Phase 7 | Pending |
+| TRAN-06 | Phase 8 | Pending |
+| TRAN-07 | Phase 8 | Pending |
+| TRAN-08 | Phase 8 | Pending |
+| PROG-01 | Phase 9 | Pending |
+| PROG-02 | Phase 9 | Pending |
+| PROG-03 | Phase 9 | Pending |
+| PROG-04 | Phase 9 | Pending |
+| SARC-01 | Phase 10 | Pending |
+| SARC-02 | Phase 10 | Pending |
+| SARC-03 | Phase 10 | Pending |
+| INTG-01 | Phase 11 | Pending |
+| INTG-02 | Phase 11 | Pending |
+| INTG-03 | Phase 11 | Pending |
+| INTG-04 | Phase 11 | Pending |
+| INTG-05 | Phase 12 | Pending |
+| INTG-06 | Phase 12 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 21 total
-- Mapped to phases: 0
-- Unmapped: 21 ⚠️
+- Mapped to phases: 21/21 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-17*
-*Last updated: 2026-02-17 after initial definition*
+*Last updated: 2026-02-17 after roadmap creation*
