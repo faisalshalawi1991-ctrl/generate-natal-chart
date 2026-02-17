@@ -6,16 +6,16 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** Load a person's complete natal chart data into Claude's context so it can answer deeply specific questions about life path, psychology, and astrological patterns based on real calculated positions.
 
-**Current focus:** Phase 9 - Secondary Progressions (v1.1 Transits & Progressions milestone)
+**Current focus:** Phase 10 - Solar Arc Directions (v1.1 Transits & Progressions milestone)
 
 ## Current Position
 
-Phase: 9 of 12 (Secondary Progressions)
+Phase: 10 of 12 (Solar Arc Directions)
 Plan: 1 of 1 complete
-Status: Phase 9 complete
-Last activity: 2026-02-17 — Phase 9 plan 01 executed (secondary progressions calculation)
+Status: Phase 10 complete
+Last activity: 2026-02-17 — Phase 10 plan 01 executed (solar arc directions calculation)
 
-Progress: [████████████░░░░░░░░] 65% (9/12 phases complete, v1.1 in progress)
+Progress: [█████████████░░░░░░░] 75% (10/12 phases complete, v1.1 in progress)
 
 ## Performance Metrics
 
@@ -37,14 +37,16 @@ Progress: [████████████░░░░░░░░] 65% (9/
 | 7 | 1 | ~7 min | ~7 min |
 | 8 | 1 | ~8 min | ~8 min |
 | 9 | 1 | ~12 min | ~12 min |
+| 10 | 1 | ~3 min | ~3 min |
 
 **Recent Trend:**
 - v1.0 execution was extremely fast (30 minutes total for 6 phases, 8 plans)
 - v1.1 Phase 7: 7 minutes, clean execution, no deviations
 - v1.1 Phase 8: 8 minutes, clean execution, no deviations
 - v1.1 Phase 9: 12 minutes, clean execution, no deviations
+- v1.1 Phase 10: 3 minutes, clean execution, 1 minor bug fix (wrong dict key)
 
-*Updated: 2026-02-17 after Phase 9 completion*
+*Updated: 2026-02-17 after Phase 10 completion*
 
 ## Accumulated Context
 
@@ -70,6 +72,11 @@ Recent decisions affecting current work:
 - **PROG_DEFAULT_ORBS = 1-degree for all aspects**: Kepler College standard for progressed-to-natal aspects (Phase 9)
 - **Error if both --age and --target-date provided**: Avoids ambiguity; return 1 with stderr message (Phase 9)
 - **--prog-year defaults to target year portion**: Most contextually relevant for monthly Moon report (Phase 9)
+- **True arc is default for solar arcs**: More accurate than Naibod constant due to seasonal Sun speed variation (Phase 10)
+- **Self-aspects excluded from SA aspects**: directed_point == natal_point comparisons are redundant in SA practice (Phase 10)
+- **No AspectsFactory for SA aspects**: Directed positions are plain float dicts, not Kerykeion subjects; manual nested loop is correct approach (Phase 10)
+- **SARC_DEFAULT_ORBS is plain dict, not ActiveAspect list**: Phase 10 computes aspects manually without AspectsFactory (Phase 10)
+- **Applying/separating via 1-year forward orb comparison**: orb_future < orb_now means Applying (Phase 10)
 
 ### Pending Todos
 
@@ -89,9 +96,12 @@ None. Phase 9 shipped successfully.
 - Flat chronological events list for Claude context reasoning
 - compute_progressed_jd() reusable for solar arcs (Phase 10)
 - build_monthly_moon() 12-call pattern reusable for any monthly progressed body tracking
+- compute_solar_arc() reusable for any arc-based calculation (Phase 10)
+- angular_distance() helper reusable for any ecliptic angular distance with wrap-around (Phase 10)
+- build_sarc_aspects() manual nested loop pattern reusable for any non-subject aspect calculation (Phase 10)
 
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Phase 9 plan 01 complete — secondary progressions implemented and verified
-Next step: Phase 9 (if v1.1 continues) — progressions or solar arcs building on transit pattern
+Stopped at: Phase 10 plan 01 complete — solar arc directions implemented and verified
+Next step: Phase 11 (skill layer) or remaining v1.1 phases
