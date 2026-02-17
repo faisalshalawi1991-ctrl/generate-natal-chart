@@ -27,7 +27,7 @@
 - [ ] **Phase 7: Current Transit Snapshots** - Calculate current transits against natal charts
 - [ ] **Phase 8: Transit Timelines** - Generate transit timelines for date ranges
 - [ ] **Phase 9: Secondary Progressions** - Implement day-for-a-year progressions
-- [ ] **Phase 10: Solar Arc Directions** - Add solar arc calculations
+- [x] **Phase 10: Solar Arc Directions** - Add solar arc calculations (completed 2026-02-17)
 - [ ] **Phase 11: Interpretation Guide & Context Injection** - Transit/progression interpretation and auto-loading
 - [ ] **Phase 12: Snapshot Storage** - Optional snapshot saves for audit trails
 
@@ -83,7 +83,7 @@ Plans:
   1. User can calculate solar arc directions for any target year
   2. User can see solar arc-to-natal aspects with 0.5-1 degree orb
   3. User can choose between true arc and mean arc calculation methods
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 10-01-PLAN.md — Add solar arc directions with true/mean arc methods, directed positions, and SA-to-natal aspects
@@ -130,6 +130,6 @@ Phases execute in numeric order: 1-6 (complete) → 7 → 8 → 9 → 10 → 11 
 | 7. Current Transit Snapshots | v1.1 | 0/1 | Not started | - |
 | 8. Transit Timelines | v1.1 | 0/1 | Not started | - |
 | 9. Secondary Progressions | v1.1 | 0/1 | Not started | - |
-| 10. Solar Arc Directions | v1.1 | 0/1 | Not started | - |
+| 10. Solar Arc Directions | v1.1 | Complete    | 2026-02-17 | - |
 | 11. Interpretation Guide & Context Injection | v1.1 | 0/1 | Not started | - |
 | 12. Snapshot Storage | v1.1 | 0/1 | Not started | - |
