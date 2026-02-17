@@ -30,7 +30,7 @@
 - [x] **Phase 10: Solar Arc Directions** - Add solar arc calculations (completed 2026-02-17)
 - [x] **Phase 11: Interpretation Guide & Context Injection** - Transit/progression interpretation and auto-loading (completed 2026-02-17)
 - [x] **Phase 12: Snapshot Storage** - Optional snapshot saves for audit trails (completed 2026-02-17)
-- [ ] **Phase 13: Tech Debt Cleanup** - Close audit gaps: meta.slug field + timeline --save support
+- [x] **Phase 13: Tech Debt Cleanup** - Close audit gaps: meta.slug field + timeline --save support (completed 2026-02-17)
 
 ## Phase Details
 
@@ -125,7 +125,7 @@ Plans:
   1. chart.json meta object includes a `slug` field matching the profile directory name
   2. `--save` flag works with `--timeline` mode (saves timeline snapshot to profile directory)
   3. SKILL.md routing table accurately reflects which modes support `--save`
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 13-01-PLAN.md — Add meta.slug to build_chart_json(), wire --save into calculate_timeline(), verify SKILL.md accuracy
@@ -149,4 +149,4 @@ Phases execute in numeric order: 1-6 (complete) → 7 → 8 → 9 → 10 → 11 
 | 10. Solar Arc Directions | v1.1 | Complete    | 2026-02-17 | - |
 | 11. Interpretation Guide & Context Injection | v1.1 | Complete    | 2026-02-17 | - |
 | 12. Snapshot Storage | v1.1 | Complete    | 2026-02-17 | - |
-| 13. Tech Debt Cleanup | v1.1 | 0/1 | Not started | - |
+| 13. Tech Debt Cleanup | v1.1 | Complete    | 2026-02-17 | - |
