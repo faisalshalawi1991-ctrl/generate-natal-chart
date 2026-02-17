@@ -6,23 +6,23 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 
 **Core value:** Load a person's complete natal chart data into Claude's context so it can answer deeply specific questions about life path, psychology, and astrological patterns based on real calculated positions.
 
-**Current focus:** Phase 10 - Solar Arc Directions (v1.1 Transits & Progressions milestone)
+**Current focus:** Phase 11 - Interpretation Guide & Context Injection (v1.1 skill layer)
 
 ## Current Position
 
-Phase: 10 of 12 (Solar Arc Directions)
+Phase: 11 of 12 (Interpretation Guide & Context Injection)
 Plan: 1 of 1 complete
-Status: Phase 10 complete
-Last activity: 2026-02-17 — Phase 10 plan 01 executed (solar arc directions calculation)
+Status: Phase 11 complete
+Last activity: 2026-02-17 — Phase 11 plan 01 executed (SKILL.md extended with predictive routing and interpretation guide)
 
-Progress: [█████████████░░░░░░░] 75% (10/12 phases complete, v1.1 in progress)
+Progress: [██████████████░░░░░░] 83% (11/12 phases complete, v1.1 near-complete)
 
 ## Performance Metrics
 
 **Velocity (v1.0 + v1.1 in progress):**
-- Total plans completed: 10
+- Total plans completed: 11
 - Average duration: 3.8 minutes
-- Total execution time: ~0.75 hours
+- Total execution time: ~0.83 hours
 
 **By Phase:**
 
@@ -38,6 +38,7 @@ Progress: [█████████████░░░░░░░] 75% (10
 | 8 | 1 | ~8 min | ~8 min |
 | 9 | 1 | ~12 min | ~12 min |
 | 10 | 1 | ~3 min | ~3 min |
+| 11 | 1 | ~4 min | ~4 min |
 
 **Recent Trend:**
 - v1.0 execution was extremely fast (30 minutes total for 6 phases, 8 plans)
@@ -45,8 +46,9 @@ Progress: [█████████████░░░░░░░] 75% (10
 - v1.1 Phase 8: 8 minutes, clean execution, no deviations
 - v1.1 Phase 9: 12 minutes, clean execution, no deviations
 - v1.1 Phase 10: 3 minutes, clean execution, 1 minor bug fix (wrong dict key)
+- v1.1 Phase 11: 4 minutes, 1 auto-fixed field path bug in guide
 
-*Updated: 2026-02-17 after Phase 10 completion*
+*Updated: 2026-02-17 after Phase 11 completion*
 
 ## Accumulated Context
 
@@ -77,6 +79,9 @@ Recent decisions affecting current work:
 - **No AspectsFactory for SA aspects**: Directed positions are plain float dicts, not Kerykeion subjects; manual nested loop is correct approach (Phase 10)
 - **SARC_DEFAULT_ORBS is plain dict, not ActiveAspect list**: Phase 10 computes aspects manually without AspectsFactory (Phase 10)
 - **Applying/separating via 1-year forward orb comparison**: orb_future < orb_now means Applying (Phase 10)
+- **Transit auto-load only on chart open**: Only --transits auto-loads (not progressions/solar arcs) — avoids context overload (Phase 11)
+- **Bash stdout as transit data**: Predictive JSON is stdout from Bash, not a Read file — consistent with ephemeral computation pattern (Phase 11)
+- **Single SKILL.md for all modes**: No separate predictive guide file — consistent with Phase 6 inline pattern (Phase 11)
 
 ### Pending Todos
 
@@ -84,9 +89,9 @@ None.
 
 ### Blockers/Concerns
 
-None. Phase 9 shipped successfully.
+None. Phase 11 shipped successfully.
 
-**v1.1 architectural patterns established (Phases 7-9):**
+**v1.1 architectural patterns established (Phases 7-11):**
 - Transit routing in main() via early-return before natal validation (same pattern as --list)
 - AspectsFactory.dual_chart_aspects with second_subject_is_fixed=True for transit-to-natal and progressed-to-natal
 - HouseComparisonFactory(transit, natal).first_points_in_second_houses for transit planet house lookup
@@ -99,9 +104,11 @@ None. Phase 9 shipped successfully.
 - compute_solar_arc() reusable for any arc-based calculation (Phase 10)
 - angular_distance() helper reusable for any ecliptic angular distance with wrap-around (Phase 10)
 - build_sarc_aspects() manual nested loop pattern reusable for any non-subject aspect calculation (Phase 10)
+- SKILL.md auto-load pattern: chart.json Read + --transits Bash on every chart open (Phase 11)
+- Intent-to-flag routing table in SKILL.md for all 4 predictive modes (Phase 11)
 
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Phase 10 plan 01 complete — solar arc directions implemented and verified
-Next step: Phase 11 (skill layer) or remaining v1.1 phases
+Stopped at: Phase 11 plan 01 complete — SKILL.md extended with predictive routing and interpretation guide
+Next step: Phase 12 (end-to-end v1.1 verification)
