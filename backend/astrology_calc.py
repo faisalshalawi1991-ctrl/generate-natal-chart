@@ -15,6 +15,9 @@ from datetime import datetime, timezone
 
 from kerykeion import AstrologicalSubjectFactory, NatalAspects, KerykeionException
 from kerykeion.charts.chart_drawer import ChartDrawer
+from kerykeion.aspects.aspects_factory import AspectsFactory
+from kerykeion.house_comparison.house_comparison_factory import HouseComparisonFactory
+from kerykeion.schemas.kr_models import ActiveAspect
 import swisseph as swe
 import kerykeion
 from slugify import slugify
@@ -72,6 +75,21 @@ MODALITY_MAP = {
     'Gem': 'Mutable', 'Vir': 'Mutable', 'Sag': 'Mutable', 'Pis': 'Mutable',
 }
 
+# Default orbs for transit-to-natal aspects (tighter than natal-only orbs)
+TRANSIT_DEFAULT_ORBS = [
+    ActiveAspect(name='conjunction', orb=3),
+    ActiveAspect(name='opposition', orb=3),
+    ActiveAspect(name='trine', orb=2),
+    ActiveAspect(name='square', orb=2),
+    ActiveAspect(name='sextile', orb=1),
+]
+
+# Major planets used in transit calculations
+MAJOR_PLANETS = [
+    'Sun', 'Moon', 'Mercury', 'Venus', 'Mars',
+    'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'
+]
+
 
 def valid_date(s):
     """
@@ -116,6 +134,33 @@ def valid_time(s):
         raise argparse.ArgumentTypeError(f"Invalid time format '{s}'. Use HH:MM (24-hour). Error: {e}")
 
 
+def valid_query_date(s):
+    """
+    Validate date string in YYYY-MM-DD format for transit query dates.
+
+    Accepts a broader range than valid_date: 1900-2100, to support historical
+    and future transit lookups beyond the natal chart date constraints.
+
+    Args:
+        s: Date string to validate
+
+    Returns:
+        datetime object if valid
+
+    Raises:
+        argparse.ArgumentTypeError: If date format is invalid or out of 1900-2100 range
+    """
+    try:
+        dt = datetime.strptime(s, "%Y-%m-%d")
+        if dt.year < 1900 or dt.year > 2100:
+            raise argparse.ArgumentTypeError(
+                f"Query date year must be between 1900 and 2100, got {dt.year}"
+            )
+        return dt
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(f"Invalid date format '{s}'. Use YYYY-MM-DD. Error: {e}")
+
+
 def valid_latitude(s):
     """
     Validate latitude value is within -90 to 90 degrees range.
@@ -158,6 +203,235 @@ def valid_longitude(s):
         return lng
     except ValueError as e:
         raise argparse.ArgumentTypeError(f"Invalid longitude '{s}': {e}")
+
+
+def load_natal_profile(slug):
+    """
+    Load a saved natal chart profile and reconstruct an AstrologicalSubject.
+
+    Reads chart.json from ~/.natal-charts/{slug}/, extracts birth data, and
+    reconstructs an AstrologicalSubjectModel using offline mode (no GeoNames).
+
+    Args:
+        slug: Profile slug (e.g., 'albert-einstein')
+
+    Returns:
+        tuple: (AstrologicalSubjectModel, profile_dict) where profile_dict is the
+               full parsed chart.json data
+
+    Raises:
+        FileNotFoundError: If the profile directory or chart.json does not exist
+        SystemExit(1): If chart.json cannot be parsed or required fields are missing
+    """
+    profile_dir = CHARTS_DIR / slug
+    chart_json_path = profile_dir / "chart.json"
+
+    if not chart_json_path.exists():
+        raise FileNotFoundError(
+            f"Profile '{slug}' not found. Run --list to see available profiles."
+        )
+
+    try:
+        with open(chart_json_path, 'r', encoding='utf-8') as f:
+            profile_data = json.load(f)
+    except (json.JSONDecodeError, OSError) as e:
+        print(f"Error reading profile '{slug}': {e}", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        meta = profile_data['meta']
+        birth_date_str = meta['birth_date']          # e.g. "1879-03-14"
+        birth_time_str = meta['birth_time']          # e.g. "11:30"
+        location = meta['location']
+        lat = float(location['latitude'])
+        lng = float(location['longitude'])
+        tz_str = location['timezone']
+        name = meta['name']
+
+        birth_date = datetime.strptime(birth_date_str, "%Y-%m-%d")
+        birth_time = datetime.strptime(birth_time_str, "%H:%M")
+    except (KeyError, ValueError) as e:
+        print(f"Error parsing profile '{slug}': missing or invalid field — {e}", file=sys.stderr)
+        sys.exit(1)
+
+    subject = AstrologicalSubjectFactory.from_birth_data(
+        name=name,
+        year=birth_date.year,
+        month=birth_date.month,
+        day=birth_date.day,
+        hour=birth_time.hour,
+        minute=birth_time.minute,
+        lat=lat,
+        lng=lng,
+        tz_str=tz_str,
+        online=False,
+        houses_system_identifier='P',
+    )
+
+    return subject, profile_data
+
+
+def build_transit_json(transit_subject, natal_subject, natal_data, query_date_str, slug):
+    """
+    Build a transit snapshot JSON dict from transit and natal AstrologicalSubject instances.
+
+    Calculates transit planet positions, natal house placements for transiting planets,
+    transit-to-natal aspects using TRANSIT_DEFAULT_ORBS, and aspect movement (applying/separating).
+
+    Args:
+        transit_subject: AstrologicalSubjectModel for the transit moment (UTC)
+        natal_subject: AstrologicalSubjectModel for the natal chart
+        natal_data: dict — full parsed chart.json from the natal profile
+        query_date_str: str — YYYY-MM-DD date used for the transit (for meta)
+        slug: str — natal profile slug (for meta)
+
+    Returns:
+        dict: Transit snapshot with meta, transit_planets, and transit_aspects sections
+    """
+    natal_meta = natal_data.get('meta', {})
+    natal_name = natal_meta.get('name', slug)
+
+    # Build orbs_used dict for meta (aspect name -> orb)
+    orbs_used = {ao['name']: ao['orb'] for ao in TRANSIT_DEFAULT_ORBS}
+
+    meta = {
+        "natal_name": natal_name,
+        "natal_slug": slug,
+        "query_date": query_date_str,
+        "query_time_utc": "12:00" if transit_subject.hour == 12 and transit_subject.minute == 0 else
+                          f"{transit_subject.hour:02d}:{transit_subject.minute:02d}",
+        "chart_type": "transit_snapshot",
+        "calculated_at": datetime.now(timezone.utc).isoformat(),
+        "orbs_used": orbs_used,
+    }
+
+    # Build transit planet position list (10 major planets)
+    planet_attrs = [
+        ('Sun', transit_subject.sun),
+        ('Moon', transit_subject.moon),
+        ('Mercury', transit_subject.mercury),
+        ('Venus', transit_subject.venus),
+        ('Mars', transit_subject.mars),
+        ('Jupiter', transit_subject.jupiter),
+        ('Saturn', transit_subject.saturn),
+        ('Uranus', transit_subject.uranus),
+        ('Neptune', transit_subject.neptune),
+        ('Pluto', transit_subject.pluto),
+    ]
+
+    # Compute natal house placement for each transit planet using HouseComparisonFactory
+    # first_subject = transit, second_subject = natal
+    # first_points_in_second_houses = transit planets in natal houses
+    house_comparison = HouseComparisonFactory(
+        transit_subject, natal_subject, active_points=MAJOR_PLANETS
+    ).get_house_comparison()
+
+    # Build a lookup: point_name -> projected_house_number
+    house_lookup = {
+        item.point_name: item.projected_house_number
+        for item in house_comparison.first_points_in_second_houses
+    }
+
+    transit_planets = []
+    for name, planet in planet_attrs:
+        natal_house = house_lookup.get(name)
+        transit_planets.append({
+            "name": name,
+            "sign": planet.sign,
+            "degree": round(planet.abs_pos % 30, 2),
+            "abs_position": round(planet.abs_pos, 4),
+            "retrograde": bool(planet.retrograde),
+            "natal_house": natal_house,
+        })
+
+    # Calculate transit-to-natal aspects using AspectsFactory.dual_chart_aspects
+    # first_subject = transit (moving), second_subject = natal (fixed)
+    dual_aspects_model = AspectsFactory.dual_chart_aspects(
+        transit_subject,
+        natal_subject,
+        active_points=MAJOR_PLANETS,
+        active_aspects=TRANSIT_DEFAULT_ORBS,
+        second_subject_is_fixed=True,
+    )
+
+    transit_aspects = []
+    for asp in dual_aspects_model.aspects:
+        # Only include aspects where p1 is a transit planet and p2 is a natal planet
+        if asp.p1_name in MAJOR_PLANETS and asp.p2_name in MAJOR_PLANETS:
+            transit_aspects.append({
+                "transit_planet": asp.p1_name,
+                "natal_planet": asp.p2_name,
+                "aspect": asp.aspect,
+                "orb": round(asp.orbit, 2),
+                "applying": asp.aspect_movement == 'Applying',
+                "movement": asp.aspect_movement,
+            })
+
+    return {
+        "meta": meta,
+        "transit_planets": transit_planets,
+        "transit_aspects": transit_aspects,
+    }
+
+
+def calculate_transits(args):
+    """
+    Orchestrate transit snapshot calculation for an existing natal profile.
+
+    Loads the natal profile identified by args.transits, creates a transit subject
+    for the requested date (args.query_date, or current UTC if not specified),
+    and prints the transit JSON to stdout.
+
+    Args:
+        args: Parsed argparse Namespace with .transits (slug) and .query_date (datetime or None)
+
+    Returns:
+        0 on success, 1 on error
+    """
+    try:
+        # Load natal chart profile
+        natal_subject, natal_data = load_natal_profile(args.transits)
+
+        # Determine query datetime (UTC)
+        if args.query_date is not None:
+            # Use specified date at UTC noon
+            query_dt = args.query_date.replace(hour=12, minute=0, second=0, microsecond=0)
+            query_date_str = args.query_date.strftime("%Y-%m-%d")
+        else:
+            # Use current UTC moment
+            query_dt = datetime.now(timezone.utc)
+            query_date_str = query_dt.strftime("%Y-%m-%d")
+
+        # Create transit subject at 0,0 UTC (geocentric, no location bias)
+        transit_subject = AstrologicalSubjectFactory.from_birth_data(
+            name='Current Transits',
+            year=query_dt.year,
+            month=query_dt.month,
+            day=query_dt.day,
+            hour=query_dt.hour,
+            minute=query_dt.minute,
+            lat=0.0,
+            lng=0.0,
+            tz_str='UTC',
+            online=False,
+            houses_system_identifier='P',
+        )
+
+        # Assemble transit JSON dict
+        transit_dict = build_transit_json(
+            transit_subject, natal_subject, natal_data, query_date_str, args.transits
+        )
+
+        # Output to stdout
+        print(json.dumps(transit_dict, indent=2))
+        return 0
+
+    except FileNotFoundError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+    except Exception as e:
+        print(f"Error calculating transits: {e}", file=sys.stderr)
+        return 1
 
 
 def position_to_sign_degree(position):
@@ -677,12 +951,29 @@ Examples:
         help="Overwrite existing profile without confirmation"
     )
 
+    parser.add_argument(
+        '--transits',
+        metavar='SLUG',
+        help='Calculate transits for an existing chart profile (e.g., albert-einstein)'
+    )
+
+    parser.add_argument(
+        '--query-date',
+        type=valid_query_date,
+        default=None,
+        help='Date for transit calculation YYYY-MM-DD (default: current UTC time)'
+    )
+
     try:
         args = parser.parse_args()
 
         # Handle --list flag
         if args.list:
             return list_profiles()
+
+        # Handle --transits flag (MUST come before natal validation)
+        if args.transits:
+            return calculate_transits(args)
 
         # Validate name is provided for chart generation
         if not args.name:
