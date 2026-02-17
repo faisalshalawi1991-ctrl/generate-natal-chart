@@ -83,10 +83,10 @@ Plans:
   1. User can calculate solar arc directions for any target year
   2. User can see solar arc-to-natal aspects with 0.5-1 degree orb
   3. User can choose between true arc and mean arc calculation methods
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 10-01: TBD
+- [ ] 10-01-PLAN.md — Add solar arc directions with true/mean arc methods, directed positions, and SA-to-natal aspects
 
 ### Phase 11: Interpretation Guide & Context Injection
 **Goal**: Transits and progressions auto-load with charts and include expert interpretation guidance
