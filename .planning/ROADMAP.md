@@ -29,7 +29,7 @@
 - [ ] **Phase 9: Secondary Progressions** - Implement day-for-a-year progressions
 - [x] **Phase 10: Solar Arc Directions** - Add solar arc calculations (completed 2026-02-17)
 - [x] **Phase 11: Interpretation Guide & Context Injection** - Transit/progression interpretation and auto-loading (completed 2026-02-17)
-- [ ] **Phase 12: Snapshot Storage** - Optional snapshot saves for audit trails
+- [x] **Phase 12: Snapshot Storage** - Optional snapshot saves for audit trails (completed 2026-02-17)
 
 ## Phase Details
 
@@ -110,7 +110,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. User can save transit, progression, and solar arc snapshots with --save flag
   2. Snapshot files are stored with date-based naming in existing profile directories
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 12-01-PLAN.md — Add --save flag, save_snapshot() helper, call sites in 3 calculate functions, and SKILL.md routing update
@@ -133,4 +133,4 @@ Phases execute in numeric order: 1-6 (complete) → 7 → 8 → 9 → 10 → 11 
 | 9. Secondary Progressions | v1.1 | 0/1 | Not started | - |
 | 10. Solar Arc Directions | v1.1 | Complete    | 2026-02-17 | - |
 | 11. Interpretation Guide & Context Injection | v1.1 | Complete    | 2026-02-17 | - |
-| 12. Snapshot Storage | v1.1 | 0/1 | Not started | - |
+| 12. Snapshot Storage | v1.1 | Complete    | 2026-02-17 | - |
