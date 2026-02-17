@@ -70,10 +70,10 @@ Plans:
   2. User can see progressed-to-natal aspects with 1 degree orb
   3. User can see monthly progressed Moon positions and sign changes for a target year
   4. User can see element and modality distribution shifts between natal and progressed charts
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 09-01: TBD
+- [ ] 09-01-PLAN.md — Add secondary progressions with CLI --progressions mode, progressed aspects, monthly Moon, and distribution shifts
 
 ### Phase 10: Solar Arc Directions
 **Goal**: Users can calculate solar arc directions using true arc method
