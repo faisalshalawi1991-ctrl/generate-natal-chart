@@ -97,10 +97,11 @@ Plans:
   2. Dedicated transit and progression interpretation guide loads into Claude's context
   3. Combined JSON output includes natal plus predictive data in a single load
   4. Skill routing supports targeted queries (e.g., "transits for next 3 months")
-**Plans:** 1 plan
+**Plans:** 2 plans
 
 Plans:
-- [ ] 11-01-PLAN.md — Extend SKILL.md with predictive routing, auto-load transits, and interpretation guide
+- [x] 11-01-PLAN.md — Extend SKILL.md with predictive routing, auto-load transits, and interpretation guide
+- [ ] 11-02-PLAN.md — Gap closure: add cross-references from mode-specific loading steps to Context Loading steps 6-8
 
 ### Phase 12: Snapshot Storage
 **Goal**: Users can optionally save transit and progression snapshots for future reference
@@ -131,5 +132,5 @@ Phases execute in numeric order: 1-6 (complete) → 7 → 8 → 9 → 10 → 11 
 | 8. Transit Timelines | v1.1 | 0/1 | Not started | - |
 | 9. Secondary Progressions | v1.1 | 0/1 | Not started | - |
 | 10. Solar Arc Directions | v1.1 | Complete    | 2026-02-17 | - |
-| 11. Interpretation Guide & Context Injection | v1.1 | 0/1 | Not started | - |
+| 11. Interpretation Guide & Context Injection | v1.1 | 1/2 | Gap closure | - |
 | 12. Snapshot Storage | v1.1 | 0/1 | Not started | - |
