@@ -97,10 +97,10 @@ Plans:
   2. Dedicated transit and progression interpretation guide loads into Claude's context
   3. Combined JSON output includes natal plus predictive data in a single load
   4. Skill routing supports targeted queries (e.g., "transits for next 3 months")
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 11-01: TBD
+- [ ] 11-01-PLAN.md — Extend SKILL.md with predictive routing, auto-load transits, and interpretation guide
 
 ### Phase 12: Snapshot Storage
 **Goal**: Users can optionally save transit and progression snapshots for future reference
