@@ -103,6 +103,39 @@ PROG_DEFAULT_ORBS = [
     ActiveAspect(name='sextile', orb=1),
 ]
 
+# Default orbs for solar arc directed-to-natal aspects (1-degree for all aspects)
+# Professional standard: 1 degree = approx. 1-year timing window (Noel Tyl)
+# Plain dict (not ActiveAspect list) — aspects are computed manually, no AspectsFactory
+SARC_DEFAULT_ORBS = {
+    'conjunction': 1.0,
+    'opposition': 1.0,
+    'trine': 1.0,
+    'square': 1.0,
+    'sextile': 1.0,
+}
+
+# Naibod mean arc constant: Sun's mean daily motion in degrees per year
+# Used for --arc-method mean (constant-rate approximation)
+NAIBOD_ARC = 0.98564733  # degrees per year
+
+# Aspect target angles for manual solar arc aspect calculation
+SARC_ASPECT_ANGLES = {
+    'conjunction': 0,
+    'opposition': 180,
+    'trine': 120,
+    'square': 90,
+    'sextile': 60,
+}
+
+# Sign offsets for reconstructing house cusp abs_positions from chart.json
+# House entries have sign + degree but NO abs_position key
+# Planets and angles DO have abs_position directly
+SIGN_OFFSETS = {
+    'Ari': 0, 'Tau': 30, 'Gem': 60, 'Can': 90,
+    'Leo': 120, 'Vir': 150, 'Lib': 180, 'Sco': 210,
+    'Sag': 240, 'Cap': 270, 'Aqu': 300, 'Pis': 330,
+}
+
 
 def valid_date(s):
     """
@@ -981,6 +1014,287 @@ def calculate_progressions(args):
         return 1
 
 
+def compute_solar_arc(birth_jd, target_jd, natal_sun_lon, method='true'):
+    """
+    Compute the solar arc for a target date.
+
+    Two methods supported:
+    - 'true': actual distance the progressed Sun has traveled (swe.calc_ut)
+    - 'mean': Naibod constant rate (0.98564733 degrees/year)
+
+    Args:
+        birth_jd: Julian Day number of the birth moment
+        target_jd: Julian Day number of the target date
+        natal_sun_lon: Natal Sun absolute longitude (from chart.json abs_position)
+        method: 'true' (default) or 'mean'
+
+    Returns:
+        float: Solar arc in degrees (0-360)
+    """
+    elapsed_years = (target_jd - birth_jd) / 365.25
+    if method == 'mean':
+        return (elapsed_years * NAIBOD_ARC) % 360
+    # True arc: progressed Sun longitude - natal Sun longitude
+    # Reuse compute_progressed_jd() from Phase 9 for consistent JD arithmetic
+    progressed_jd = compute_progressed_jd(birth_jd, target_jd)
+    prog_sun_data, _ = swe.calc_ut(progressed_jd, swe.SUN)
+    prog_sun_lon = prog_sun_data[0]
+    return (prog_sun_lon - natal_sun_lon) % 360
+
+
+def angular_distance(lon1, lon2):
+    """
+    Compute the smallest angular distance between two ecliptic longitudes.
+
+    Args:
+        lon1: First longitude in degrees (0-360)
+        lon2: Second longitude in degrees (0-360)
+
+    Returns:
+        float: Angular distance in degrees (0-180)
+    """
+    diff = abs(lon1 - lon2) % 360
+    return 360 - diff if diff > 180 else diff
+
+
+def build_sarc_aspects(directed_positions, natal_positions, orbs=None):
+    """
+    Find aspects between SA directed positions and natal positions.
+
+    Uses manual nested-loop calculation (no AspectsFactory) because directed
+    positions are not a Kerykeion AstrologicalSubjectModel.
+
+    Args:
+        directed_positions: dict of {name: directed_longitude}
+        natal_positions: dict of {name: natal_longitude}
+        orbs: dict of {aspect_name: max_orb}, defaults to SARC_DEFAULT_ORBS
+
+    Returns:
+        list: Aspect dicts sorted by orb ascending
+    """
+    if orbs is None:
+        orbs = SARC_DEFAULT_ORBS
+
+    aspects = []
+    for d_name, d_lon in directed_positions.items():
+        for n_name, n_lon in natal_positions.items():
+            # Skip self-aspects: directed and natal point with same name are redundant
+            if d_name == n_name:
+                continue
+            dist = angular_distance(d_lon, n_lon)
+            for asp_name, asp_angle in SARC_ASPECT_ANGLES.items():
+                orb = abs(dist - asp_angle)
+                if orb <= orbs.get(asp_name, 1.0):
+                    aspects.append({
+                        'directed_point': d_name,
+                        'natal_point': n_name,
+                        'aspect': asp_name,
+                        'orb': round(orb, 3),
+                    })
+    return sorted(aspects, key=lambda x: x['orb'])
+
+
+def build_solar_arc_json(natal_data, slug, birth_jd, target_jd, arc, arc_method):
+    """
+    Assemble the complete solar arc directions JSON dict.
+
+    Args:
+        natal_data: Parsed natal chart.json dict
+        slug: Profile slug string
+        birth_jd: Julian Day number of birth
+        target_jd: Julian Day number of target date
+        arc: Solar arc in degrees (float)
+        arc_method: 'true' or 'mean'
+
+    Returns:
+        dict: Complete solar arc directions output
+    """
+    elapsed_years = (target_jd - birth_jd) / 365.25
+
+    # Derive target date string from JD
+    y, m, d, h = swe.revjul(target_jd)
+    target_date_str = f"{int(y):04d}-{int(m):02d}-{int(d):02d}"
+
+    # Build meta section
+    natal_meta = natal_data.get('meta', {})
+    natal_name = natal_meta.get('name', slug)
+    meta = {
+        'natal_name': natal_name,
+        'natal_slug': slug,
+        'target_date': target_date_str,
+        'arc_degrees': round(arc, 3),
+        'arc_method': arc_method,
+        'elapsed_years': round(elapsed_years, 2),
+        'chart_type': 'solar_arc_directions',
+        'calculated_at': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S+00:00'),
+        'orbs_used': SARC_DEFAULT_ORBS,
+    }
+
+    # Extract natal planet positions (10 major planets)
+    natal_planets = {
+        p['name']: p['abs_position']
+        for p in natal_data['planets']
+        if p['name'] in MAJOR_PLANETS
+    }
+
+    # Extract natal angle positions (ASC and MC)
+    natal_angles = {
+        a['name']: a['abs_position']
+        for a in natal_data['angles']
+        if a['name'] in ['ASC', 'MC']
+    }
+
+    # Combine natal positions for aspect calculation
+    all_natal = {**natal_planets, **natal_angles}
+
+    # Compute directed positions: add arc to every natal longitude
+    directed_positions = {name: (lon + arc) % 360 for name, lon in all_natal.items()}
+
+    # Build directed_planets list in MAJOR_PLANETS order
+    # Build lookup for natal planet data (sign, degree) from natal_data
+    natal_planet_lookup = {p['name']: p for p in natal_data['planets']}
+    directed_planets = []
+    for planet_name in MAJOR_PLANETS:
+        if planet_name not in natal_planet_lookup:
+            continue
+        natal_p = natal_planet_lookup[planet_name]
+        natal_abs = natal_p['abs_position']
+        directed_abs = directed_positions[planet_name]
+        dir_sign, dir_degree = position_to_sign_degree(directed_abs)
+        directed_planets.append({
+            'name': planet_name,
+            'natal_sign': natal_p.get('sign', ''),
+            'natal_degree': round(natal_p.get('degree', 0.0), 2),
+            'natal_abs_position': round(natal_abs, 3),
+            'directed_abs_position': round(directed_abs, 3),
+            'directed_sign': dir_sign,
+            'directed_degree': round(dir_degree, 2),
+        })
+
+    # Build directed_angles list (ASC then MC)
+    natal_angle_lookup = {a['name']: a for a in natal_data['angles']}
+    directed_angles = []
+    for angle_name in ['ASC', 'MC']:
+        if angle_name not in natal_angle_lookup:
+            continue
+        natal_a = natal_angle_lookup[angle_name]
+        natal_abs = natal_a['abs_position']
+        directed_abs = directed_positions[angle_name]
+        dir_sign, dir_degree = position_to_sign_degree(directed_abs)
+        directed_angles.append({
+            'name': angle_name,
+            'natal_abs_position': round(natal_abs, 3),
+            'directed_abs_position': round(directed_abs, 3),
+            'directed_sign': dir_sign,
+            'directed_degree': round(dir_degree, 2),
+        })
+
+    # Compute aspects with applying/separating detection
+    aspects_raw = build_sarc_aspects(directed_positions, all_natal)
+
+    # Compute arc one year forward for applying/separating detection
+    natal_sun_lon = natal_planets.get('Sun', 0.0)
+    arc_future = compute_solar_arc(birth_jd, target_jd + 365.25, natal_sun_lon, method=arc_method)
+
+    aspects = []
+    for asp in aspects_raw:
+        d_name = asp['directed_point']
+        n_name = asp['natal_point']
+        asp_name = asp['aspect']
+        asp_angle = SARC_ASPECT_ANGLES[asp_name]
+
+        natal_lon_of_directed = all_natal.get(d_name, 0.0)
+        natal_lon_of_natal = all_natal.get(n_name, 0.0)
+
+        # Current orb
+        current_orb = asp['orb']
+
+        # Future directed position (1 year forward)
+        directed_lon_future = (natal_lon_of_directed + arc_future) % 360
+
+        # Future orb
+        orb_future = abs(angular_distance(directed_lon_future, natal_lon_of_natal) - asp_angle)
+
+        movement = 'Applying' if orb_future < current_orb else 'Separating'
+
+        aspects.append({
+            'directed_point': d_name,
+            'natal_point': n_name,
+            'aspect': asp_name,
+            'orb': current_orb,
+            'movement': movement,
+        })
+
+    return {
+        'meta': meta,
+        'directed_planets': directed_planets,
+        'directed_angles': directed_angles,
+        'aspects': aspects,
+    }
+
+
+def calculate_solar_arcs(args):
+    """
+    Orchestrate solar arc directions calculation for an existing natal profile.
+
+    Loads natal profile, computes arc (true or mean method), applies arc to all
+    natal positions, finds SA-to-natal aspects, and outputs JSON to stdout.
+
+    Args:
+        args: Parsed argparse namespace (solar_arcs, target_date, age, arc_method)
+
+    Returns:
+        int: Exit code (0 = success, 1 = error)
+    """
+    try:
+        natal_subject, natal_data = load_natal_profile(args.solar_arcs)
+
+        natal_meta = natal_data.get('meta', {})
+        birth_date_str = natal_meta['birth_date']
+        birth_time_str = natal_meta['birth_time']
+        birth_dt = datetime.strptime(birth_date_str + ' ' + birth_time_str, "%Y-%m-%d %H:%M")
+        birth_jd = swe.julday(birth_dt.year, birth_dt.month, birth_dt.day,
+                              birth_dt.hour + birth_dt.minute / 60.0)
+
+        # Validate mutually exclusive --age and --target-date
+        if args.age is not None and args.target_date is not None:
+            print("Error: --age and --target-date are mutually exclusive", file=sys.stderr)
+            return 1
+
+        # Determine target Julian Day
+        if args.age is not None:
+            target_jd = birth_jd + args.age * 365.25
+        elif args.target_date is not None:
+            target_jd = swe.julday(args.target_date.year, args.target_date.month,
+                                   args.target_date.day, 12.0)
+        else:
+            today = datetime.now(timezone.utc)
+            target_jd = swe.julday(today.year, today.month, today.day, 12.0)
+
+        # Get arc method (default: 'true')
+        arc_method = getattr(args, 'arc_method', 'true')
+
+        # Get natal Sun longitude from profile
+        natal_sun_lon = next(
+            p['abs_position'] for p in natal_data['planets'] if p['name'] == 'Sun'
+        )
+
+        # Compute solar arc
+        arc = compute_solar_arc(birth_jd, target_jd, natal_sun_lon, method=arc_method)
+
+        # Build and emit JSON
+        sarc_dict = build_solar_arc_json(natal_data, args.solar_arcs, birth_jd, target_jd, arc, arc_method)
+        print(json.dumps(sarc_dict, indent=2))
+        return 0
+
+    except FileNotFoundError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+    except Exception as e:
+        print(f"Error calculating solar arc directions: {e}", file=sys.stderr)
+        return 1
+
+
 def position_to_sign_degree(position):
     """
     Convert absolute ecliptic longitude (0-360°) to zodiac sign and degree within sign.
@@ -1560,6 +1874,19 @@ Examples:
         dest='prog_year',
         help='Year for monthly progressed Moon report (default: year of target date)'
     )
+    parser.add_argument(
+        '--solar-arcs',
+        metavar='SLUG',
+        dest='solar_arcs',
+        help='Calculate solar arc directions for an existing chart profile (e.g., albert-einstein)'
+    )
+    parser.add_argument(
+        '--arc-method',
+        choices=['true', 'mean'],
+        default='true',
+        dest='arc_method',
+        help='Solar arc calculation method: true (default, actual progressed Sun) or mean (Naibod constant)'
+    )
 
     try:
         args = parser.parse_args()
@@ -1567,6 +1894,10 @@ Examples:
         # Handle --list flag
         if args.list:
             return list_profiles()
+
+        # Handle --solar-arcs flag (MUST come before --progressions, --timeline, --transits)
+        if args.solar_arcs:
+            return calculate_solar_arcs(args)
 
         # Handle --progressions flag (MUST come before --timeline, --transits, and natal validation)
         if args.progressions:
