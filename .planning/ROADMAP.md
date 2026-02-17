@@ -125,7 +125,7 @@ Plans:
   1. chart.json meta object includes a `slug` field matching the profile directory name
   2. `--save` flag works with `--timeline` mode (saves timeline snapshot to profile directory)
   3. SKILL.md routing table accurately reflects which modes support `--save`
-**Plans:** 0/1
+**Plans:** 1 plan
 
 Plans:
 - [ ] 13-01-PLAN.md — Add meta.slug to build_chart_json(), wire --save into calculate_timeline(), verify SKILL.md accuracy
