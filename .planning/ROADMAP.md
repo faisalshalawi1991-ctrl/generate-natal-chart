@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 Complete Natal Chart System** — Phases 1-6 (shipped 2026-02-16) | [Archive](milestones/v1.0-ROADMAP.md)
-- 🚧 **v1.1 Transits & Progressions** — Phases 7-12 (in progress)
+- 🚧 **v1.1 Transits & Progressions** — Phases 7-13 (in progress)
 - 📋 **v2.0 Synastry & Returns** — Future (planned)
 
 ## Phases
@@ -30,6 +30,7 @@
 - [x] **Phase 10: Solar Arc Directions** - Add solar arc calculations (completed 2026-02-17)
 - [x] **Phase 11: Interpretation Guide & Context Injection** - Transit/progression interpretation and auto-loading (completed 2026-02-17)
 - [x] **Phase 12: Snapshot Storage** - Optional snapshot saves for audit trails (completed 2026-02-17)
+- [ ] **Phase 13: Tech Debt Cleanup** - Close audit gaps: meta.slug field + timeline --save support
 
 ## Phase Details
 
@@ -115,10 +116,24 @@ Plans:
 Plans:
 - [ ] 12-01-PLAN.md — Add --save flag, save_snapshot() helper, call sites in 3 calculate functions, and SKILL.md routing update
 
+### Phase 13: Tech Debt Cleanup
+**Goal**: Close audit gaps — add missing meta.slug field to chart.json and wire --save into timeline mode
+**Depends on**: Phase 12
+**Requirements**: None (tech debt closure from v1.1 audit)
+**Gap Closure:** Closes gaps from v1.1-MILESTONE-AUDIT.md
+**Success Criteria** (what must be TRUE):
+  1. chart.json meta object includes a `slug` field matching the profile directory name
+  2. `--save` flag works with `--timeline` mode (saves timeline snapshot to profile directory)
+  3. SKILL.md routing table accurately reflects which modes support `--save`
+**Plans:** 0/1
+
+Plans:
+- [ ] 13-01-PLAN.md — Add meta.slug to build_chart_json(), wire --save into calculate_timeline(), verify SKILL.md accuracy
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1-6 (complete) → 7 → 8 → 9 → 10 → 11 → 12
+Phases execute in numeric order: 1-6 (complete) → 7 → 8 → 9 → 10 → 11 → 12 → 13
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -134,3 +149,4 @@ Phases execute in numeric order: 1-6 (complete) → 7 → 8 → 9 → 10 → 11 
 | 10. Solar Arc Directions | v1.1 | Complete    | 2026-02-17 | - |
 | 11. Interpretation Guide & Context Injection | v1.1 | Complete    | 2026-02-17 | - |
 | 12. Snapshot Storage | v1.1 | Complete    | 2026-02-17 | - |
+| 13. Tech Debt Cleanup | v1.1 | 0/1 | Not started | - |
