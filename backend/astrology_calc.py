@@ -11,13 +11,16 @@ import sys
 import os
 import json
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from collections import defaultdict
 
 from kerykeion import AstrologicalSubjectFactory, NatalAspects, KerykeionException
 from kerykeion.charts.chart_drawer import ChartDrawer
 from kerykeion.aspects.aspects_factory import AspectsFactory
 from kerykeion.house_comparison.house_comparison_factory import HouseComparisonFactory
 from kerykeion.schemas.kr_models import ActiveAspect
+from kerykeion.ephemeris_data_factory import EphemerisDataFactory
+from kerykeion.transits_time_range_factory import TransitsTimeRangeFactory
 import swisseph as swe
 import kerykeion
 from slugify import slugify
@@ -431,6 +434,196 @@ def calculate_transits(args):
         return 1
     except Exception as e:
         print(f"Error calculating transits: {e}", file=sys.stderr)
+        return 1
+
+
+def parse_preset_range(preset, reference_date=None):
+    """
+    Convert preset range string to (start_dt, end_dt) UTC noon datetimes.
+
+    Args:
+        preset: One of 'week', '30d', '3m', 'year'
+        reference_date: datetime to use as 'today' (default: today UTC)
+
+    Returns:
+        Tuple[datetime, datetime]: (start, end) at UTC noon
+    """
+    if reference_date is None:
+        reference_date = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    today = reference_date.replace(hour=12, minute=0, second=0, microsecond=0)
+
+    DELTAS = {
+        'week':  timedelta(days=6),
+        '30d':   timedelta(days=29),
+        '3m':    timedelta(days=89),
+        'year':  timedelta(days=364),
+    }
+    if preset not in DELTAS:
+        raise ValueError(f"Invalid preset: {preset}. Use: week, 30d, 3m, year")
+
+    return today, today + DELTAS[preset]
+
+
+def build_timeline_events(results):
+    """
+    Extract exact transit aspect hit events from TransitsTimeRangeModel.
+
+    An 'exact hit' is detected when an aspect's aspect_movement transitions from
+    'Applying' (on day N) to 'Separating' or 'Static' (on day N+1).
+    The hit date is reported as day N (the last day in the Applying state).
+    The orb on day N is the closest recorded approach.
+
+    Args:
+        results: TransitsTimeRangeModel from TransitsTimeRangeFactory.get_transit_moments()
+
+    Returns:
+        List[dict]: Sorted list of event dicts, each with:
+            - date (str): YYYY-MM-DD of the exact hit
+            - transit_planet (str): Name of the transiting planet
+            - aspect (str): Aspect type (conjunction, opposition, etc.)
+            - natal_planet (str): Name of the natal planet
+            - orb_at_hit (float): Closest orb recorded (the applying orb on hit date)
+    """
+    aspect_tracking = defaultdict(list)
+    for tm in results.transits:
+        date_str = tm.date[:10]  # YYYY-MM-DD from ISO datetime
+        for asp in tm.aspects:
+            if asp.p1_name in MAJOR_PLANETS and asp.p2_name in MAJOR_PLANETS:
+                key = (asp.p1_name, asp.aspect, asp.p2_name)
+                aspect_tracking[key].append((date_str, round(asp.orbit, 3), asp.aspect_movement))
+
+    events = []
+    for (transit_planet, aspect_type, natal_planet), track in aspect_tracking.items():
+        for i in range(1, len(track)):
+            prev_date, prev_orb, prev_mv = track[i - 1]
+            _curr_date, _curr_orb, curr_mv = track[i]
+            if prev_mv == 'Applying' and curr_mv in ('Separating', 'Static'):
+                events.append({
+                    'date': prev_date,
+                    'transit_planet': transit_planet,
+                    'aspect': aspect_type,
+                    'natal_planet': natal_planet,
+                    'orb_at_hit': prev_orb,
+                })
+
+    events.sort(key=lambda e: e['date'])
+    return events
+
+
+def build_timeline_json(results, natal_data, slug, start_dt, end_dt):
+    """
+    Assemble complete timeline JSON dict from factory results and natal data.
+
+    Args:
+        results: TransitsTimeRangeModel from TransitsTimeRangeFactory.get_transit_moments()
+        natal_data: dict — full parsed chart.json from the natal profile
+        slug: str — natal profile slug
+        start_dt: datetime — timeline start (UTC noon)
+        end_dt: datetime — timeline end (UTC noon)
+
+    Returns:
+        dict: Timeline JSON with 'meta' and 'events' sections
+    """
+    events = build_timeline_events(results)
+
+    natal_meta = natal_data.get('meta', {})
+    natal_name = natal_meta.get('name', slug)
+
+    range_days = (end_dt - start_dt).days
+
+    orbs_used = {ao['name']: ao['orb'] for ao in TRANSIT_DEFAULT_ORBS}
+
+    meta = {
+        "natal_name": natal_name,
+        "natal_slug": slug,
+        "start_date": start_dt.strftime("%Y-%m-%d"),
+        "end_date": end_dt.strftime("%Y-%m-%d"),
+        "range_days": range_days,
+        "chart_type": "transit_timeline",
+        "calculated_at": datetime.now(timezone.utc).isoformat(),
+        "orbs_used": orbs_used,
+        "event_count": len(events),
+        "sampling_note": "Daily resolution; fast Moon aspects (< 4h in orb) may not appear.",
+    }
+
+    return {
+        "meta": meta,
+        "events": events,
+    }
+
+
+def calculate_timeline(args):
+    """
+    Orchestrate transit timeline calculation for an existing natal profile.
+
+    Loads the natal profile identified by args.timeline, determines the date range
+    from either preset (--range) or custom (--start/--end) arguments, generates
+    daily ephemeris data, runs transit comparisons, extracts exact hit events, and
+    prints the timeline JSON to stdout.
+
+    Args:
+        args: Parsed argparse Namespace with .timeline (slug), .range, .start, .end
+
+    Returns:
+        0 on success, 1 on error
+    """
+    try:
+        natal_subject, natal_data = load_natal_profile(args.timeline)
+
+        # Determine date range
+        if args.start and args.end:
+            # Custom range (TRAN-07)
+            start_dt = args.start.replace(hour=12, minute=0, second=0, microsecond=0)
+            end_dt = args.end.replace(hour=12, minute=0, second=0, microsecond=0)
+            if start_dt >= end_dt:
+                print("Error: --start must be before --end", file=sys.stderr)
+                return 1
+            range_days = (end_dt - start_dt).days
+            if range_days > 365:
+                print("Error: Custom date range cannot exceed 365 days", file=sys.stderr)
+                return 1
+        elif args.start or args.end:
+            print("Error: both --start and --end required for custom range", file=sys.stderr)
+            return 1
+        else:
+            # Preset range (TRAN-06)
+            start_dt, end_dt = parse_preset_range(args.range)
+
+        # Generate daily ephemeris (lat=0, lng=0, UTC — geocentric, location-independent)
+        eph_factory = EphemerisDataFactory(
+            start_datetime=start_dt,
+            end_datetime=end_dt,
+            step_type='days',
+            step=1,
+            lat=0.0,
+            lng=0.0,
+            tz_str='Etc/UTC',
+        )
+        ephemeris_subjects = eph_factory.get_ephemeris_data_as_astrological_subjects()
+
+        # Run transit comparison against natal chart
+        transit_factory = TransitsTimeRangeFactory(
+            natal_chart=natal_subject,
+            ephemeris_data_points=ephemeris_subjects,
+            active_points=MAJOR_PLANETS,
+            active_aspects=TRANSIT_DEFAULT_ORBS,
+        )
+        results = transit_factory.get_transit_moments()
+
+        # Extract exact hit events and assemble output
+        timeline_dict = build_timeline_json(results, natal_data, args.timeline, start_dt, end_dt)
+        print(json.dumps(timeline_dict, indent=2))
+        return 0
+
+    except FileNotFoundError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+    except Exception as e:
+        print(f"Error calculating timeline: {e}", file=sys.stderr)
         return 1
 
 
@@ -964,12 +1157,40 @@ Examples:
         help='Date for transit calculation YYYY-MM-DD (default: current UTC time)'
     )
 
+    parser.add_argument(
+        '--timeline',
+        metavar='SLUG',
+        help='Generate transit timeline for an existing chart profile (e.g., albert-einstein)'
+    )
+    parser.add_argument(
+        '--range',
+        choices=['week', '30d', '3m', 'year'],
+        default='30d',
+        help='Preset date range for timeline (default: 30d). Ignored if --start/--end given.'
+    )
+    parser.add_argument(
+        '--start',
+        type=valid_query_date,
+        default=None,
+        help='Custom timeline start date YYYY-MM-DD (requires --end)'
+    )
+    parser.add_argument(
+        '--end',
+        type=valid_query_date,
+        default=None,
+        help='Custom timeline end date YYYY-MM-DD (requires --start)'
+    )
+
     try:
         args = parser.parse_args()
 
         # Handle --list flag
         if args.list:
             return list_profiles()
+
+        # Handle --timeline flag (MUST come before --transits and natal validation)
+        if args.timeline:
+            return calculate_timeline(args)
 
         # Handle --transits flag (MUST come before natal validation)
         if args.transits:
