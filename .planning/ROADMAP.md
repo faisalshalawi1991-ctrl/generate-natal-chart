@@ -56,10 +56,10 @@ Plans:
   1. User can generate transit timeline for preset ranges (week, 30 days, 3 months, year)
   2. User can generate transit timeline for custom start and end dates
   3. User can see exact transit aspect hits (events) within a date range
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 08-01: TBD
+- [ ] 08-01-PLAN.md — Add transit timeline generation with preset/custom date ranges and exact hit event detection
 
 ### Phase 9: Secondary Progressions
 **Goal**: Users can calculate secondary progressions using day-for-a-year formula
