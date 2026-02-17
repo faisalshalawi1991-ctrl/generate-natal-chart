@@ -686,6 +686,15 @@ def calculate_timeline(args):
         # Extract exact hit events and assemble output
         timeline_dict = build_timeline_json(results, natal_data, args.timeline, start_dt, end_dt)
         print(json.dumps(timeline_dict, indent=2))
+
+        if args.save:
+            date_str = timeline_dict['meta'].get('start_date', 'unknown')
+            try:
+                out_path = save_snapshot(CHARTS_DIR / args.timeline, 'timeline', date_str, timeline_dict)
+                print(f"Snapshot saved: {out_path}", file=sys.stderr)
+            except Exception as e:
+                print(f"Warning: Could not save snapshot: {e}", file=sys.stderr)
+
         return 0
 
     except FileNotFoundError as e:
@@ -1446,6 +1455,7 @@ def build_chart_json(subject, args):
     # META SECTION
     meta = {
         "name": args.name,
+        "slug": slugify(args.name),
         "birth_date": args.date.strftime("%Y-%m-%d"),
         "birth_time": args.time.strftime("%H:%M"),
         "location": {
