@@ -11,9 +11,9 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 11 of 12 (Interpretation Guide & Context Injection)
-Plan: 1 of 1 complete
+Plan: 2 of 2 complete
 Status: Phase 11 complete
-Last activity: 2026-02-17 — Phase 11 plan 01 executed (SKILL.md extended with predictive routing and interpretation guide)
+Last activity: 2026-02-17 — Phase 11 plan 02 executed (transit auto-load cross-references added to all three mode entry points, closing INTG-01)
 
 Progress: [██████████████░░░░░░] 83% (11/12 phases complete, v1.1 near-complete)
 
@@ -38,7 +38,7 @@ Progress: [██████████████░░░░░░] 83% (11
 | 8 | 1 | ~8 min | ~8 min |
 | 9 | 1 | ~12 min | ~12 min |
 | 10 | 1 | ~3 min | ~3 min |
-| 11 | 1 | ~4 min | ~4 min |
+| 11 | 2 | ~7 min | ~3.5 min |
 
 **Recent Trend:**
 - v1.0 execution was extremely fast (30 minutes total for 6 phases, 8 plans)
@@ -46,9 +46,10 @@ Progress: [██████████████░░░░░░] 83% (11
 - v1.1 Phase 8: 8 minutes, clean execution, no deviations
 - v1.1 Phase 9: 12 minutes, clean execution, no deviations
 - v1.1 Phase 10: 3 minutes, clean execution, 1 minor bug fix (wrong dict key)
-- v1.1 Phase 11: 4 minutes, 1 auto-fixed field path bug in guide
+- v1.1 Phase 11 plan 01: 4 minutes, 1 auto-fixed field path bug in guide
+- v1.1 Phase 11 plan 02: 3 minutes, no deviations, closed INTG-01 transit auto-load gap
 
-*Updated: 2026-02-17 after Phase 11 completion*
+*Updated: 2026-02-17 after Phase 11 plan 02 completion*
 
 ## Accumulated Context
 
@@ -82,6 +83,7 @@ Recent decisions affecting current work:
 - **Transit auto-load only on chart open**: Only --transits auto-loads (not progressions/solar arcs) — avoids context overload (Phase 11)
 - **Bash stdout as transit data**: Predictive JSON is stdout from Bash, not a Read file — consistent with ephemeral computation pattern (Phase 11)
 - **Single SKILL.md for all modes**: No separate predictive guide file — consistent with Phase 6 inline pattern (Phase 11)
+- **One-line cross-reference per mode section**: Minimal change that closes INTG-01 routing ambiguity without restructuring mode sections (Phase 11 plan 02)
 
 ### Pending Todos
 
@@ -106,9 +108,10 @@ None. Phase 11 shipped successfully.
 - build_sarc_aspects() manual nested loop pattern reusable for any non-subject aspect calculation (Phase 10)
 - SKILL.md auto-load pattern: chart.json Read + --transits Bash on every chart open (Phase 11)
 - Intent-to-flag routing table in SKILL.md for all 4 predictive modes (Phase 11)
+- Cross-reference pattern: mode-specific loading steps delegate to shared Context Loading section for transit auto-load (Phase 11 plan 02)
 
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Phase 11 plan 01 complete — SKILL.md extended with predictive routing and interpretation guide
+Stopped at: Phase 11 plan 02 complete — transit auto-load cross-references added to all three mode entry points, closing INTG-01
 Next step: Phase 12 (end-to-end v1.1 verification)
