@@ -93,6 +93,16 @@ MAJOR_PLANETS = [
     'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'
 ]
 
+# Default orbs for progressed-to-natal aspects (1-degree orb for all aspects)
+# Standard for secondary progressions per Kepler College recommendation
+PROG_DEFAULT_ORBS = [
+    ActiveAspect(name='conjunction', orb=1),
+    ActiveAspect(name='opposition', orb=1),
+    ActiveAspect(name='trine', orb=1),
+    ActiveAspect(name='square', orb=1),
+    ActiveAspect(name='sextile', orb=1),
+]
+
 
 def valid_date(s):
     """
@@ -624,6 +634,350 @@ def calculate_timeline(args):
         return 1
     except Exception as e:
         print(f"Error calculating timeline: {e}", file=sys.stderr)
+        return 1
+
+
+def compute_progressed_jd(birth_jd, target_jd):
+    """
+    Compute the progressed Julian Day using the day-for-a-year formula.
+
+    Formula: progressed_jd = birth_jd + (target_jd - birth_jd) / 365.25
+
+    The elapsed years between birth and target become elapsed days in the
+    ephemeris (one day of ephemeris time = one year of life). The divisor
+    365.25 is the Julian year — standard in Western tropical astrology.
+
+    Args:
+        birth_jd: Julian Day number of the birth moment (including fractional hour)
+        target_jd: Julian Day number of the target date/moment
+
+    Returns:
+        float: Progressed Julian Day number
+    """
+    return birth_jd + (target_jd - birth_jd) / 365.25
+
+
+def build_monthly_moon(birth_jd, target_year, natal_lat, natal_lng, natal_tz_str):
+    """
+    Calculate progressed Moon position for each month of target_year.
+
+    Uses the 1st day of each month at UTC noon as the target moment,
+    calculates progressed JD, creates a progressed subject, and extracts
+    Moon sign and degree. Sign changes are detected and flagged.
+
+    Args:
+        birth_jd: Julian Day number of the birth moment
+        target_year: Integer year for which to calculate the 12-month Moon positions
+        natal_lat: Natal chart latitude (used for progressed subject creation)
+        natal_lng: Natal chart longitude (used for progressed subject creation)
+        natal_tz_str: Natal chart timezone string (used for progressed subject creation)
+
+    Returns:
+        List[dict]: 12 entries with month (YYYY-MM), sign, degree, and optional sign_change
+    """
+    monthly = []
+    prev_sign = None
+
+    for month in range(1, 13):
+        month_jd = swe.julday(target_year, month, 1, 12.0)
+        prog_jd = compute_progressed_jd(birth_jd, month_jd)
+        py, pm, pd, ph = swe.revjul(prog_jd)
+
+        m_subj = AstrologicalSubjectFactory.from_birth_data(
+            name=f'prog_moon_{month}',
+            year=int(py), month=int(pm), day=int(pd),
+            hour=int(ph), minute=int((ph - int(ph)) * 60),
+            lat=natal_lat, lng=natal_lng, tz_str=natal_tz_str,
+            online=False, houses_system_identifier='P',
+        )
+        sign = m_subj.moon.sign
+        degree = round(m_subj.moon.position % 30, 2)
+
+        entry = {
+            "month": f"{target_year}-{month:02d}",
+            "sign": sign,
+            "degree": degree,
+        }
+        if prev_sign is not None and sign != prev_sign:
+            entry["sign_change"] = f"{prev_sign} -> {sign}"
+
+        monthly.append(entry)
+        prev_sign = sign
+
+    return monthly
+
+
+def build_progressed_json(progressed_subject, natal_subject, natal_data, slug,
+                          target_date_str, target_jd, birth_jd, prog_year=None):
+    """
+    Assemble complete secondary progressions JSON dict.
+
+    Args:
+        progressed_subject: AstrologicalSubjectModel for the progressed date
+        natal_subject: AstrologicalSubjectModel for the natal chart
+        natal_data: dict — full parsed chart.json from natal profile
+        slug: str — natal profile slug
+        target_date_str: str — YYYY-MM-DD target date (may be None for age-based)
+        target_jd: float — Julian Day number of target date
+        birth_jd: float — Julian Day number of birth moment
+        prog_year: int or None — year for monthly Moon report (defaults to target year)
+
+    Returns:
+        dict: Complete progressions JSON with meta, progressed_planets, progressed_angles,
+              progressed_aspects, monthly_moon, and distribution_shift sections
+    """
+    natal_meta = natal_data.get('meta', {})
+    natal_name = natal_meta.get('name', slug)
+    location = natal_meta.get('location', {})
+    natal_lat = float(location['latitude'])
+    natal_lng = float(location['longitude'])
+    natal_tz_str = location['timezone']
+
+    # Compute progressed date parts
+    prog_jd = compute_progressed_jd(birth_jd, target_jd)
+    py, pm, pd, ph = swe.revjul(prog_jd)
+    prog_hour = int(ph)
+    prog_minute = int((ph - prog_hour) * 60)
+
+    # Compute target_date_str if not provided (age-based mode)
+    if target_date_str is None:
+        ty, tm, td, th = swe.revjul(target_jd)
+        target_date_str = f"{int(ty):04d}-{int(tm):02d}-{int(td):02d}"
+
+    # Compute age at target
+    age_at_target = int((target_jd - birth_jd) / 365.25)
+
+    # Determine prog_year for monthly Moon report
+    if prog_year is None:
+        # Default: year portion of target date
+        ty, tm, td, th = swe.revjul(target_jd)
+        prog_year = int(ty)
+
+    # Build orbs_used dict for meta
+    orbs_used = {ao['name']: ao['orb'] for ao in PROG_DEFAULT_ORBS}
+
+    # META section
+    meta = {
+        "natal_name": natal_name,
+        "natal_slug": slug,
+        "target_date": target_date_str,
+        "progressed_date": f"{int(py):04d}-{int(pm):02d}-{int(pd):02d}",
+        "progressed_time": f"{prog_hour:02d}:{prog_minute:02d}",
+        "age_at_target": age_at_target,
+        "chart_type": "secondary_progressions",
+        "calculated_at": datetime.now(timezone.utc).isoformat(),
+        "orbs_used": orbs_used,
+        "prog_year": prog_year,
+    }
+
+    # PROGRESSED PLANETS section (10 planets)
+    planet_attrs = [
+        ('Sun', progressed_subject.sun),
+        ('Moon', progressed_subject.moon),
+        ('Mercury', progressed_subject.mercury),
+        ('Venus', progressed_subject.venus),
+        ('Mars', progressed_subject.mars),
+        ('Jupiter', progressed_subject.jupiter),
+        ('Saturn', progressed_subject.saturn),
+        ('Uranus', progressed_subject.uranus),
+        ('Neptune', progressed_subject.neptune),
+        ('Pluto', progressed_subject.pluto),
+    ]
+
+    progressed_planets = []
+    for name, planet in planet_attrs:
+        progressed_planets.append({
+            "name": name,
+            "sign": planet.sign,
+            "degree": round(planet.position % 30, 2),
+            "abs_position": round(planet.abs_pos, 2),
+            "retrograde": getattr(planet, 'retrograde', False),
+        })
+
+    # PROGRESSED ANGLES section (ASC and MC)
+    progressed_angles = [
+        {
+            "name": "ASC",
+            "sign": progressed_subject.ascendant.sign,
+            "degree": round(progressed_subject.ascendant.position % 30, 2),
+            "abs_position": round(progressed_subject.ascendant.abs_pos, 2),
+        },
+        {
+            "name": "MC",
+            "sign": progressed_subject.medium_coeli.sign,
+            "degree": round(progressed_subject.medium_coeli.position % 30, 2),
+            "abs_position": round(progressed_subject.medium_coeli.abs_pos, 2),
+        },
+    ]
+
+    # PROGRESSED ASPECTS section (progressed-to-natal, 1-degree orb)
+    aspects_model = AspectsFactory.dual_chart_aspects(
+        progressed_subject,
+        natal_subject,
+        active_points=MAJOR_PLANETS,
+        active_aspects=PROG_DEFAULT_ORBS,
+        second_subject_is_fixed=True,
+    )
+
+    progressed_aspects = []
+    for asp in aspects_model.aspects:
+        if asp.p1_name in MAJOR_PLANETS and asp.p2_name in MAJOR_PLANETS:
+            progressed_aspects.append({
+                "progressed_planet": asp.p1_name,
+                "natal_planet": asp.p2_name,
+                "aspect": asp.aspect,
+                "orb": round(asp.orbit, 2),
+                "applying": asp.aspect_movement == 'Applying',
+                "movement": asp.aspect_movement,
+            })
+
+    # MONTHLY MOON section
+    monthly_moon = build_monthly_moon(birth_jd, prog_year, natal_lat, natal_lng, natal_tz_str)
+
+    # DISTRIBUTION SHIFT section
+    def compute_distributions_for_subject(subject):
+        """Compute element and modality counts for 10 planets + ASC."""
+        planet_bodies = [
+            ('Sun', subject.sun), ('Moon', subject.moon),
+            ('Mercury', subject.mercury), ('Venus', subject.venus),
+            ('Mars', subject.mars), ('Jupiter', subject.jupiter),
+            ('Saturn', subject.saturn), ('Uranus', subject.uranus),
+            ('Neptune', subject.neptune), ('Pluto', subject.pluto),
+        ]
+        placements = planet_bodies + [('ASC', subject.ascendant)]
+        elem = {'Fire': 0, 'Earth': 0, 'Air': 0, 'Water': 0}
+        mod = {'Cardinal': 0, 'Fixed': 0, 'Mutable': 0}
+        for name, body in placements:
+            e = ELEMENT_MAP.get(body.sign)
+            m = MODALITY_MAP.get(body.sign)
+            if e:
+                elem[e] += 1
+            if m:
+                mod[m] += 1
+        return elem, mod
+
+    natal_elem, natal_mod = compute_distributions_for_subject(natal_subject)
+    prog_elem, prog_mod = compute_distributions_for_subject(progressed_subject)
+
+    distribution_shift = {
+        "elements": {
+            element: {
+                "natal": natal_elem[element],
+                "progressed": prog_elem[element],
+                "delta": prog_elem[element] - natal_elem[element],
+            }
+            for element in ['Fire', 'Earth', 'Air', 'Water']
+        },
+        "modalities": {
+            modality: {
+                "natal": natal_mod[modality],
+                "progressed": prog_mod[modality],
+                "delta": prog_mod[modality] - natal_mod[modality],
+            }
+            for modality in ['Cardinal', 'Fixed', 'Mutable']
+        }
+    }
+
+    return {
+        "meta": meta,
+        "progressed_planets": progressed_planets,
+        "progressed_angles": progressed_angles,
+        "progressed_aspects": progressed_aspects,
+        "monthly_moon": monthly_moon,
+        "distribution_shift": distribution_shift,
+    }
+
+
+def calculate_progressions(args):
+    """
+    Orchestrate secondary progressions calculation for an existing natal profile.
+
+    Loads the natal profile identified by args.progressions, computes the progressed
+    Julian Day using the day-for-a-year formula, creates a progressed subject at the
+    natal location, and prints the complete progressions JSON to stdout.
+
+    Args:
+        args: Parsed argparse Namespace with .progressions (slug), .target_date,
+              .age (int or None), and .prog_year (int or None)
+
+    Returns:
+        0 on success, 1 on error
+    """
+    try:
+        # Load natal chart profile
+        natal_subject, natal_data = load_natal_profile(args.progressions)
+
+        natal_meta = natal_data.get('meta', {})
+        location = natal_meta.get('location', {})
+        natal_lat = float(location['latitude'])
+        natal_lng = float(location['longitude'])
+        natal_tz = location['timezone']
+
+        # Extract birth date/time and compute birth JD
+        birth_date_str = natal_meta['birth_date']
+        birth_time_str = natal_meta['birth_time']
+        birth_dt = datetime.strptime(birth_date_str + ' ' + birth_time_str, "%Y-%m-%d %H:%M")
+        birth_jd = swe.julday(birth_dt.year, birth_dt.month, birth_dt.day,
+                              birth_dt.hour + birth_dt.minute / 60.0)
+
+        # Validate: cannot use both --age and --target-date
+        if args.age is not None and args.target_date is not None:
+            print("Error: Cannot use both --age and --target-date", file=sys.stderr)
+            return 1
+
+        # Determine target JD and target_date_str
+        if args.age is not None:
+            target_jd = birth_jd + args.age * 365.25
+            target_date_str = None  # will be computed in build_progressed_json
+        elif args.target_date is not None:
+            target_jd = swe.julday(args.target_date.year, args.target_date.month,
+                                   args.target_date.day, 12.0)
+            target_date_str = args.target_date.strftime("%Y-%m-%d")
+        else:
+            # Default: today UTC noon
+            today = datetime.now(timezone.utc)
+            target_jd = swe.julday(today.year, today.month, today.day, 12.0)
+            target_date_str = today.strftime("%Y-%m-%d")
+
+        # Compute progressed JD
+        prog_jd = compute_progressed_jd(birth_jd, target_jd)
+        py, pm, pd, ph = swe.revjul(prog_jd)
+        prog_hour = int(ph)
+        prog_minute = int((ph - prog_hour) * 60)
+
+        # Create progressed subject using natal location (CRITICAL: not lat=0.0, lng=0.0)
+        progressed_subject = AstrologicalSubjectFactory.from_birth_data(
+            name='Progressed',
+            year=int(py), month=int(pm), day=int(pd),
+            hour=prog_hour, minute=prog_minute,
+            lat=natal_lat, lng=natal_lng, tz_str=natal_tz,
+            online=False, houses_system_identifier='P',
+        )
+
+        # Determine prog_year for monthly Moon report
+        if args.prog_year is not None:
+            prog_year = args.prog_year
+        elif args.age is not None:
+            prog_year = birth_dt.year + args.age
+        elif args.target_date is not None:
+            prog_year = args.target_date.year
+        else:
+            prog_year = datetime.now(timezone.utc).year
+
+        # Assemble and print progressions JSON
+        prog_dict = build_progressed_json(
+            progressed_subject, natal_subject, natal_data,
+            args.progressions, target_date_str, target_jd, birth_jd,
+            prog_year=prog_year,
+        )
+        print(json.dumps(prog_dict, indent=2))
+        return 0
+
+    except FileNotFoundError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+    except Exception as e:
+        print(f"Error calculating progressions: {e}", file=sys.stderr)
         return 1
 
 
@@ -1181,12 +1535,42 @@ Examples:
         help='Custom timeline end date YYYY-MM-DD (requires --start)'
     )
 
+    parser.add_argument(
+        '--progressions',
+        metavar='SLUG',
+        help='Calculate secondary progressions for an existing chart profile (e.g., albert-einstein)'
+    )
+    parser.add_argument(
+        '--target-date',
+        type=valid_query_date,
+        default=None,
+        dest='target_date',
+        help='Target date for progressions YYYY-MM-DD (default: today UTC)'
+    )
+    parser.add_argument(
+        '--age',
+        type=int,
+        default=None,
+        help='Target age in whole years for progressions (alternative to --target-date)'
+    )
+    parser.add_argument(
+        '--prog-year',
+        type=int,
+        default=None,
+        dest='prog_year',
+        help='Year for monthly progressed Moon report (default: year of target date)'
+    )
+
     try:
         args = parser.parse_args()
 
         # Handle --list flag
         if args.list:
             return list_profiles()
+
+        # Handle --progressions flag (MUST come before --timeline, --transits, and natal validation)
+        if args.progressions:
+            return calculate_progressions(args)
 
         # Handle --timeline flag (MUST come before --transits and natal validation)
         if args.timeline:
