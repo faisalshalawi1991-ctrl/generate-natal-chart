@@ -43,10 +43,10 @@
   3. User can see which natal houses transiting planets occupy
   4. User can see retrograde status for each transiting planet
   5. User can see whether each transit aspect is applying or separating
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 07-01: TBD
+- [ ] 07-01-PLAN.md — Add transit snapshot calculation with CLI --transits mode
 
 ### Phase 8: Transit Timelines
 **Goal**: Users can generate transit timelines showing aspect events across date ranges
