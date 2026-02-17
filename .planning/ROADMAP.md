@@ -110,10 +110,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. User can save transit, progression, and solar arc snapshots with --save flag
   2. Snapshot files are stored with date-based naming in existing profile directories
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 12-01: TBD
+- [ ] 12-01-PLAN.md — Add --save flag, save_snapshot() helper, call sites in 3 calculate functions, and SKILL.md routing update
 
 ## Progress
 
